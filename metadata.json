@@ -1,0 +1,6 @@
+{
+  "name": "Zolve RM Dashboard",
+  "description": "Action-oriented CRM for Relationship Managers to call, qualify, and track student journeys across financial products.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
