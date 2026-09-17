@@ -10,6 +10,7 @@ import {
   Columns,
   X,
   Users,
+  Check,
 } from 'lucide-react';
 import { StudentLead, JourneyStage, KPIStatus, CallingStatus, Partner } from '../types';
 import { isLeadOverdue } from '../utils/slaHelpers';
@@ -35,6 +36,8 @@ interface LeadTableProps {
   selectedLeadIds?: string[];
   onLeadSelectionChange?: (selectedIds: string[]) => void;
   onBulkAssign?: (selectedIds: string[]) => void;
+  showClaimButton?: boolean;
+  onClaimLead?: (lead: StudentLead) => void;
 }
 
 export const LeadTable: React.FC<LeadTableProps> = ({
@@ -51,6 +54,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   selectedLeadIds = [],
   onLeadSelectionChange,
   onBulkAssign,
+  showClaimButton = false,
+  onClaimLead,
 }) => {
   const [sortBy, setSortBy] = useState<'nextCall' | 'name'>('nextCall');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -58,22 +63,94 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [tableSearch, setTableSearch] = useState('');
   
-  // Default visible columns for standard view
+  // Comprehensive column configuration with 60+ fields
   const defaultLeadColumns: ColumnConfig[] = [
-    { key: 'checkbox', label: '', visible: true },
-    { key: 'id', label: 'Lead ID', visible: true },
-    { key: 'studentName', label: 'Student & University', visible: true },
-    { key: 'journeyStage', label: 'Journey Stage', visible: true },
-    { key: 'callingStatus', label: 'Calling Status', visible: true },
-    { key: 'nextCall', label: 'Next Call / KPI', visible: true },
-    { key: 'products', label: 'Products', visible: true },
-    { key: 'kpiStatus', label: 'KPI Status', visible: true },
-    { key: 'leadStatus', label: 'Lead Status', visible: true },
-    { key: 'priority', label: 'Priority', visible: true },
-    { key: 'destinationCountry', label: 'Destination', visible: false },
-    { key: 'course', label: 'Course', visible: false },
-    { key: 'noOfAttempts', label: 'Attempts', visible: false },
-    { key: 'lastCallOutcome', label: 'Last Outcome', visible: false },
+    // Core Identification
+    { key: 'checkbox', label: '', visible: true, category: 'core' },
+    { key: 'id', label: 'Lead ID', visible: true, category: 'core' },
+    { key: 'createdAt', label: 'Created At', visible: false, category: 'core' },
+    { key: 'sourceChannel', label: 'Source Channel', visible: false, category: 'core' },
+    { key: 'sourceCode', label: 'Source Code', visible: false, category: 'core' },
+    { key: 'bdeCode', label: 'BDE Code', visible: false, category: 'core' },
+    { key: 'partnerCode', label: 'Partner Code', visible: false, category: 'core' },
+
+    // Personal Information
+    { key: 'studentName', label: 'Student Name', visible: true, category: 'core' },
+    { key: 'mobileNumber', label: 'Mobile Number', visible: false, category: 'core' },
+    { key: 'mobileCountryCode', label: 'Mobile Country Code', visible: false, category: 'core' },
+    { key: 'email', label: 'Email', visible: false, category: 'core' },
+
+    // Academic Information
+    { key: 'destinationCountry', label: 'Destination Countries', visible: true, category: 'academic' },
+    { key: 'finalCountry', label: 'Final Country', visible: false, category: 'academic' },
+    { key: 'course', label: 'Program / Course', visible: true, category: 'academic' },
+    { key: 'degreeType', label: 'Degree Type', visible: false, category: 'academic' },
+    { key: 'intake', label: 'Intake', visible: false, category: 'academic' },
+    { key: 'testsInterestedIn', label: 'Tests Interested In', visible: false, category: 'academic' },
+    { key: 'universitiesOfInterest', label: 'Universities of Interest', visible: false, category: 'academic' },
+    { key: 'finalUniversity', label: 'Final University', visible: false, category: 'academic' },
+
+    // Financial Information
+    { key: 'fundingPlan', label: 'Funding Plan', visible: false, category: 'academic' },
+
+    // Signup & Customer Status
+    { key: 'signupStatus', label: 'Signup Status', visible: false, category: 'core' },
+    { key: 'customerId', label: 'Customer ID', visible: false, category: 'core' },
+
+    // Ownership & Assignment
+    { key: 'leadOwnerTeam', label: 'Lead Owner Team', visible: false, category: 'ownership' },
+    { key: 'leadOwner', label: 'Lead Owner', visible: false, category: 'ownership' },
+    { key: 'leadAssignedAt', label: 'Lead Assigned At', visible: false, category: 'ownership' },
+    { key: 'leadAssignedBy', label: 'Lead Assigned By', visible: false, category: 'ownership' },
+
+    // Qualification
+    { key: 'qualificationStatus', label: 'Qualification Status', visible: false, category: 'qualification' },
+    { key: 'qualifiedBy', label: 'Qualified By', visible: false, category: 'qualification' },
+    { key: 'qualificationCompletedAt', label: 'Qualification Completed At', visible: false, category: 'qualification' },
+    { key: 'qualificationNotes', label: 'Qualification Notes', visible: false, category: 'qualification' },
+    { key: 'educationLoan', label: 'Education Loan', visible: false, category: 'qualification' },
+    { key: 'claimStatus', label: 'Claim Status', visible: false, category: 'qualification' },
+
+    // Calling Operational
+    { key: 'callingStatus', label: 'Calling Status', visible: true, category: 'calling' },
+    { key: 'noOfAttempts', label: 'No. of Attempts', visible: false, category: 'calling' },
+    { key: 'lastCallAt', label: 'Last Call At', visible: false, category: 'calling' },
+    { key: 'lastCallOutcome', label: 'Last Call Outcome', visible: false, category: 'calling' },
+    { key: 'nextCall', label: 'Next Call At', visible: true, category: 'calling' },
+    { key: 'priority', label: 'Priority', visible: true, category: 'calling' },
+
+    // Lead Journey & Status
+    { key: 'journeyStage', label: 'Lead Stage', visible: true, category: 'core' },
+    { key: 'leadStatus', label: 'Lead Status', visible: true, category: 'core' },
+    { key: 'closureReason', label: 'Closure Reason', visible: false, category: 'core' },
+    { key: 'closedAt', label: 'Closed At', visible: false, category: 'core' },
+    { key: 'closedBy', label: 'Closed By', visible: false, category: 'core' },
+    { key: 'closureNotes', label: 'Closure Notes', visible: false, category: 'core' },
+
+    // KPI & SLA
+    { key: 'kpiStatus', label: 'SLA Status', visible: true, category: 'calling' },
+    { key: 'lastActionAt', label: 'Last Action At', visible: false, category: 'calling' },
+    { key: 'lastActionBy', label: 'Last Action By', visible: false, category: 'calling' },
+    { key: 'noActionSince', label: 'No Action Since', visible: false, category: 'calling' },
+    { key: 'escalationStatus', label: 'Escalation Status', visible: false, category: 'calling' },
+    { key: 'escalatedTo', label: 'Escalated To', visible: false, category: 'calling' },
+    { key: 'kpiOverdueMinutes', label: 'KPI Overdue Minutes', visible: false, category: 'calling' },
+
+    // Products
+    { key: 'products', label: 'Products', visible: true, category: 'products' },
+    { key: 'educationLoanProduct', label: 'Education Loan', visible: false, category: 'products' },
+    { key: 'refinanceProduct', label: 'Refinance', visible: false, category: 'products' },
+    { key: 'testPrepProduct', label: 'Test Prep', visible: false, category: 'products' },
+    { key: 'testVoucherProduct', label: 'Test Voucher', visible: false, category: 'products' },
+    { key: 'admissionsProduct', label: 'Admissions', visible: false, category: 'products' },
+    { key: 'accommodationProduct', label: 'Accommodation', visible: false, category: 'products' },
+    { key: 'esimProduct', label: 'eSIM', visible: false, category: 'products' },
+    { key: 'travelFlightsProduct', label: 'Travel / Flights', visible: false, category: 'products' },
+    { key: 'bankAccountProduct', label: 'Bank Account', visible: false, category: 'products' },
+    { key: 'creditCardProduct', label: 'Credit Card', visible: false, category: 'products' },
+    { key: 'moneyTransferProduct', label: 'Money Transfer', visible: false, category: 'products' },
+    { key: 'nreNroProduct', label: 'NRE/NRO Account', visible: false, category: 'products' },
+    { key: 'insuranceProduct', label: 'Insurance', visible: false, category: 'products' },
   ];
 
   const defaultPartnerColumns: ColumnConfig[] = [
@@ -173,6 +250,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
       if (columnFilters['callingStatus'] && lead.callingStatus !== columnFilters['callingStatus']) {
         return false;
       }
+      if (columnFilters['claimStatus'] && (lead.claimStatus || 'Not Claimed') !== columnFilters['claimStatus']) {
+        return false;
+      }
       if (columnFilters['id'] && !lead.id.toLowerCase().includes(columnFilters['id'].toLowerCase())) {
         return false;
       }
@@ -249,6 +329,13 @@ export const LeadTable: React.FC<LeadTableProps> = ({
         return (
           <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${statusClass}`}>
             {lead.kpiStatus}
+          </span>
+        );
+      case 'claimStatus':
+        const claimClass = lead.claimStatus === 'Claimed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200';
+        return (
+          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md border ${claimClass}`}>
+            {lead.claimStatus || 'Not Claimed'}
           </span>
         );
       default:
@@ -389,7 +476,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                 </div>
 
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {columns.map(col => (
+                  {[...columns].sort((a, b) => a.label.localeCompare(b.label)).map(col => (
                     <label 
                       key={col.key}
                       className="flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer select-none"
@@ -438,6 +525,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                 else if (col.key === 'products') width = 'min-w-[220px]';
                 else if (col.key === 'kpiStatus') width = 'min-w-[120px]';
                 else if (col.key === 'leadStatus') width = 'min-w-[120px]';
+                else if (col.key === 'claimStatus') width = 'min-w-[120px]';
 
                 // Checkbox column header
                 if (col.key === 'checkbox') {
@@ -469,6 +557,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       return ['Not Attempted', 'Callback Scheduled', 'Connected', 'RNR'];
                     case 'products':
                       return ['Education Loan', 'Bank Account', 'Credit Card', 'Insurance', 'eSIM', 'Money Transfer'];
+                    case 'claimStatus':
+                      return ['Claimed', 'Not Claimed'];
                     case 'destinationCountry':
                       return [...new Set(leads.map(l => l.destinationCountry))].sort();
                     case 'course':
@@ -482,7 +572,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   }
                 };
 
-                const isFilterable = ['priority', 'journeyStage', 'kpiStatus', 'leadStatus', 'products', 'callingStatus', 'destinationCountry', 'course', 'lastCallOutcome', 'noOfAttempts', 'id', 'studentName'].includes(col.key);
+                const isFilterable = ['priority', 'journeyStage', 'kpiStatus', 'leadStatus', 'products', 'callingStatus', 'claimStatus', 'destinationCountry', 'course', 'lastCallOutcome', 'noOfAttempts', 'id', 'studentName'].includes(col.key);
                 const filterOptions = getFilterOptions();
                 const isTextFilter = ['id', 'studentName'].includes(col.key);
                 
@@ -672,17 +762,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       } else if (col.key === 'studentName') {
                         return (
                           <td key={col.key} className="py-3 px-4 cursor-pointer" onClick={() => onSelectLead(lead)}>
-                            <div className="flex flex-col">
-                              <div className="font-semibold text-slate-900 group-hover:text-[#D91C24] transition-colors flex items-center gap-1.5">
-                                <span>{lead.studentName}</span>
-                                <span className="text-[10px] text-slate-400 font-normal">
-                                  ({lead.destinationCountry})
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-slate-500 truncate max-w-[210px]">
-                                {lead.finalUniversity || lead.universitiesOfInterest[0]}
-                              </span>
-                            </div>
+                            <span className="font-semibold text-slate-900 group-hover:text-[#D91C24] transition-colors">
+                              {lead.studentName}
+                            </span>
                           </td>
                         );
                       } else if (col.key === 'journeyStage') {
@@ -755,24 +837,40 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                     {/* Actions column - always visible */}
                     <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Claim button: Only show if showClaimButton is true */}
+                        {showClaimButton && onClaimLead && (
+                          <button
+                            id={`btn-claim-${lead.id}`}
+                            onClick={() => onClaimLead(lead)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Claim</span>
+                          </button>
+                        )}
+
                         {/* Call button: Solid Zolve Red */}
-                        <button
-                          id={`btn-call-${lead.id}`}
-                          onClick={() => onInitiateCall(lead)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] transition-colors cursor-pointer"
-                        >
-                          <Phone className="w-3 h-3 fill-white" />
-                          <span>Call</span>
-                        </button>
+                        {!showClaimButton && (
+                          <button
+                            id={`btn-call-${lead.id}`}
+                            onClick={() => onInitiateCall(lead)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] transition-colors cursor-pointer"
+                          >
+                            <Phone className="w-3 h-3 fill-white" />
+                            <span>Call</span>
+                          </button>
+                        )}
 
                         {/* Quick Outcome button */}
-                        <button
-                          id={`btn-quick-log-${lead.id}`}
-                          onClick={() => onQuickLogOutcome(lead)}
-                          className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-                        >
-                          Log
-                        </button>
+                        {!showClaimButton && (
+                          <button
+                            id={`btn-quick-log-${lead.id}`}
+                            onClick={() => onQuickLogOutcome(lead)}
+                            className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                          >
+                            Log
+                          </button>
+                        )}
 
                         {/* View Arrow */}
                         <button

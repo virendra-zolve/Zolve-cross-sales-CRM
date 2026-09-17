@@ -12,6 +12,9 @@ interface TeamLeadDashboardProps {
   onInitiateCall: (lead: StudentLead) => void;
   onQuickLogOutcome: (lead: StudentLead) => void;
   onBulkAssignLeads?: (leads: StudentLead[], assignment: { agentId?: string }) => void;
+  onViewTeamManagement?: () => void;
+  onViewPartnerManagement?: () => void;
+  onViewLeadManagement?: () => void;
 }
 
 export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
@@ -21,6 +24,9 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   onInitiateCall,
   onQuickLogOutcome,
   onBulkAssignLeads,
+  onViewTeamManagement,
+  onViewPartnerManagement,
+  onViewLeadManagement,
 }) => {
   const [activeKpiFilter, setActiveKpiFilter] = useState<'all' | 'unassigned' | 'qualified' | 'not_attempted' | 'kpi_breach'>('all');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
@@ -45,6 +51,28 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Management Navigation */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onViewLeadManagement}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+        >
+          Lead Management
+        </button>
+        <button
+          onClick={onViewTeamManagement}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+        >
+          Team Management
+        </button>
+        <button
+          onClick={onViewPartnerManagement}
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+        >
+          Partner Management
+        </button>
+      </div>
+
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Unassigned */}

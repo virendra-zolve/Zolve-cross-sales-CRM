@@ -72,6 +72,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
   const [newNoteText, setNewNoteText] = useState('');
   const [editingProductId, setEditingProductId] = useState<MasterProduct | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<MasterProduct | null>(null);
+  const [isCallStatusDropdownOpen, setIsCallStatusDropdownOpen] = useState(false);
 
   const isDirty = useMemo(() => {
     return JSON.stringify(draftLead) !== JSON.stringify(lead);
@@ -221,20 +222,20 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
       <div className="sticky top-16 z-30 bg-white border-b border-slate-200 shadow-xs">
         <div className="p-3 space-y-2">
           {/* Top Row: Back button + Lead ID + Save Controls */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={onBack}
-                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex-shrink-0"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <span className="font-mono text-sm font-bold text-slate-900">{draftLead.id}</span>
-              <span className="text-slate-300">•</span>
-              <span className="text-sm font-semibold text-slate-800">{draftLead.studentName}</span>
+              <span className="font-mono text-sm font-bold text-slate-900 truncate">{draftLead.id}</span>
+              <span className="text-slate-300 flex-shrink-0">•</span>
+              <span className="text-sm font-semibold text-slate-800 truncate">{draftLead.studentName}</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap justify-end">
               {isDirty && (
                 <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
                   <span className="text-[11px] font-semibold text-amber-800">Unsaved</span>
@@ -265,6 +266,39 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                 <ArrowRightLeft className="w-3.5 h-3.5" />
                 <span>Assign</span>
               </button>
+              <div className="relative">
+                <button
+                  onClick={() => setIsCallStatusDropdownOpen(!isCallStatusDropdownOpen)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer whitespace-nowrap"
+                >
+                  <span>Call Status</span>
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </button>
+
+                {isCallStatusDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="space-y-2">
+                      <div className="px-2 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Call Outcome</div>
+                      {['Connected', 'Callback Requested', 'RNR', 'Busy', 'Switch Off', 'Not Interested', 'Invalid Number', 'Other'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => {
+                            setDraftLead(prev => ({
+                              ...prev,
+                              callingStatus: status as any,
+                              lastCallOutcome: status as any,
+                            }));
+                            setIsCallStatusDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={() => onInitiateCall(draftLead)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg cursor-pointer"

@@ -243,6 +243,7 @@ export interface StudentLead {
   qualificationCompletedAt?: string;
   qualificationNotes?: string;
   educationLoan?: string;
+  claimStatus?: 'Claimed' | 'Not Claimed';
   loanProfile?: EducationLoanProfile;
   readinessChecklist: {
     passportValid: boolean;

@@ -717,6 +717,9 @@ export default function App() {
               onInitiateCall={handleInitiateCall}
               onQuickLogOutcome={handleQuickLogOutcome}
               onBulkAssignLeads={handleBulkReassignLeads}
+              onViewLeadManagement={() => handleNavigateToAllLeads('all')}
+              onViewTeamManagement={() => setCurrentView('team_management')}
+              onViewPartnerManagement={() => setCurrentView('partner_management')}
             />
           ) : (
             /* Operational RM Dashboard V1 */
@@ -751,6 +754,22 @@ export default function App() {
         ) : currentView === 'leads_list' ? (
           /* Full Lead Management Screen (Answers: "Show me all my leads") */
           <div className="space-y-4">
+            {/* Financial Summary Boxes - Top of Lead Management */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg border border-emerald-200">
+                <div className="text-xs font-semibold text-emerald-700 uppercase">Total Commission</div>
+                <div className="text-2xl font-bold text-emerald-900 mt-1">₹44.2L</div>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+                <div className="text-xs font-semibold text-blue-700 uppercase">Total Pipeline</div>
+                <div className="text-2xl font-bold text-blue-900 mt-1">₹2.09 Cr</div>
+              </div>
+              <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+                <div className="text-xs font-semibold text-purple-700 uppercase">Pending to Partners</div>
+                <div className="text-2xl font-bold text-purple-900 mt-1">₹15.8L</div>
+              </div>
+            </div>
+
             {/* Context breadcrumb & switch back to Dashboard */}
             <div className="flex items-center justify-between bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs">
               <div className="flex items-center gap-2">

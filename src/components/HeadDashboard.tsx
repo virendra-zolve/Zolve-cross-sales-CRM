@@ -1,12 +1,6 @@
-import React, { useMemo } from 'react';
-import { 
-  TrendingUp,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  BarChart3,
-} from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { StudentLead, Partner, TeamMember } from '../types';
+import { ChevronDown } from 'lucide-react';
 
 interface HeadDashboardProps {
   leads: StudentLead[];
@@ -17,6 +11,13 @@ interface HeadDashboardProps {
   onViewPartnerManagement?: () => void;
 }
 
+const LOCATIONS = [
+  { id: 'all', name: 'All Locations' },
+  { id: 'DEL', name: 'Delhi NCR' },
+  { id: 'MUM', name: 'Mumbai' },
+  { id: 'BNG', name: 'Bangalore' },
+];
+
 export const HeadDashboard: React.FC<HeadDashboardProps> = ({
   leads,
   partners = [],
@@ -25,32 +26,47 @@ export const HeadDashboard: React.FC<HeadDashboardProps> = ({
   onViewTeamManagement,
   onViewPartnerManagement,
 }) => {
+  const [selectedLocation, setSelectedLocation] = useState('all');
+
   // Executive-level metrics
   const metrics = useMemo(() => {
-    const totalLeads = leads.length;
-    const activeLeads = leads.filter(l => l.leadStatus === 'Active').length;
-    const closedLeads = leads.filter(l => l.leadStatus === 'Closed').length;
-    const qualifiedLeads = leads.filter(l => l.qualificationStatus === 'Qualified').length;
-    const atRisk = leads.filter(l => l.kpiStatus === 'Overdue' || l.escalationStatus === 'Escalated').length;
+    // Filter leads by location if selected (using sourceCode as location proxy)
+    const filteredLeads = selectedLocation === 'all' 
+      ? leads 
+      : leads.filter(l => l.sourceCode.startsWith(selectedLocation));
+    
+    const filteredPartners = selectedLocation === 'all'
+      ? partners
+      : partners.filter(p => p.sourceCode.startsWith(selectedLocation));
+    
+    const filteredTeamMembers = selectedLocation === 'all'
+      ? teamMembers
+      : teamMembers.filter(m => m.location && m.location.startsWith(LOCATIONS.find(loc => loc.id === selectedLocation)?.name || ''));
+
+    const totalLeads = filteredLeads.length;
+    const activeLeads = filteredLeads.filter(l => l.leadStatus === 'Active').length;
+    const closedLeads = filteredLeads.filter(l => l.leadStatus === 'Closed').length;
+    const qualifiedLeads = filteredLeads.filter(l => l.qualificationStatus === 'Qualified').length;
+    const atRisk = filteredLeads.filter(l => l.kpiStatus === 'Overdue' || l.escalationStatus === 'Escalated').length;
     
     const conversionRate = totalLeads > 0 ? Math.round((closedLeads / totalLeads) * 100) : 0;
     const qualificationRate = totalLeads > 0 ? Math.round((qualifiedLeads / totalLeads) * 100) : 0;
     const activeRate = totalLeads > 0 ? Math.round((activeLeads / totalLeads) * 100) : 0;
 
     // Team metrics
-    const activeTeamMembers = teamMembers.filter(m => m.status === 'Active').length;
-    const pendingTeamMembers = teamMembers.filter(m => m.status === 'Pending Approval').length;
-    const avgTeamCapacity = teamMembers.length > 0 
-      ? Math.round(teamMembers.reduce((acc, m) => acc + m.capacityPercent, 0) / teamMembers.length) 
+    const activeTeamMembers = filteredTeamMembers.filter(m => m.status === 'Active').length;
+    const pendingTeamMembers = filteredTeamMembers.filter(m => m.status === 'Pending Approval').length;
+    const avgTeamCapacity = filteredTeamMembers.length > 0 
+      ? Math.round(filteredTeamMembers.reduce((acc, m) => acc + m.capacityPercent, 0) / filteredTeamMembers.length) 
       : 0;
 
     // Partner metrics
-    const activePartners = partners.filter(p => p.status === 'Active').length;
-    const pendingPartners = partners.filter(p => p.status === 'Pending Manager' || p.status === 'Pending Head').length;
+    const activePartners = filteredPartners.filter(p => p.status === 'Active').length;
+    const pendingPartners = filteredPartners.filter(p => p.status === 'Pending Manager' || p.status === 'Pending Head').length;
 
     // Product breakdown
     const productMetrics: Record<string, { count: number; qualified: number }> = {};
-    leads.forEach(lead => {
+    filteredLeads.forEach(lead => {
       lead.productOpportunities.forEach(prod => {
         if (!productMetrics[prod.product]) {
           productMetrics[prod.product] = { count: 0, qualified: 0 };
@@ -71,61 +87,72 @@ export const HeadDashboard: React.FC<HeadDashboardProps> = ({
       conversionRate,
       qualificationRate,
       activeRate,
-      teamCount: teamMembers.length,
+      teamCount: filteredTeamMembers.length,
       activeTeamMembers,
       pendingTeamMembers,
       avgTeamCapacity,
-      partnerCount: partners.length,
+      partnerCount: filteredPartners.length,
       activePartners,
       pendingPartners,
       productMetrics,
     };
-  }, [leads, partners, teamMembers]);
+  }, [leads, partners, teamMembers, selectedLocation]);
 
   return (
     <div className="space-y-6">
-      {/* EXECUTIVE KPI DASHBOARD */}
-      <div className="grid grid-cols-4 gap-3">
-        {/* Conversion Rate */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase text-blue-700">Conversion Rate</span>
-            <TrendingUp className="text-blue-600" size={16} />
-          </div>
-          <div className="text-4xl font-bold text-blue-900">{metrics.conversionRate}%</div>
-          <p className="text-xs text-blue-700 mt-2">{metrics.closedLeads} of {metrics.totalLeads} leads closed</p>
+      {/* BUSINESS METRICS AT TOP */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg shadow-sm">
+          <div className="text-xs font-semibold text-emerald-700 uppercase">Total Commission</div>
+          <div className="text-3xl font-bold text-emerald-900 mt-2">₹44.2L</div>
         </div>
-
-        {/* Qualification Rate */}
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase text-purple-700">Qualified</span>
-            <CheckCircle2 className="text-purple-600" size={16} />
-          </div>
-          <div className="text-4xl font-bold text-purple-900">{metrics.qualificationRate}%</div>
-          <p className="text-xs text-purple-700 mt-2">{metrics.qualifiedLeads} qualified leads</p>
+        <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg shadow-sm">
+          <div className="text-xs font-semibold text-blue-700 uppercase">Total Pipeline</div>
+          <div className="text-3xl font-bold text-blue-900 mt-2">₹2.09 Cr</div>
         </div>
-
-        {/* Active Pipeline */}
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase text-emerald-700">Active Pipeline</span>
-            <Zap className="text-emerald-600" size={16} />
-          </div>
-          <div className="text-4xl font-bold text-emerald-900">{metrics.activeRate}%</div>
-          <p className="text-xs text-emerald-700 mt-2">{metrics.activeLeads} leads active</p>
-        </div>
-
-        {/* At Risk */}
-        <div className="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase text-red-700">At Risk</span>
-            <AlertTriangle className="text-red-600" size={16} />
-          </div>
-          <div className="text-4xl font-bold text-red-900">{metrics.atRisk}</div>
-          <p className="text-xs text-red-700 mt-2">SLA breached / escalated</p>
+        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg shadow-sm">
+          <div className="text-xs font-semibold text-purple-700 uppercase">Pending to Partners</div>
+          <div className="text-3xl font-bold text-purple-900 mt-2">₹15.8L</div>
         </div>
       </div>
+
+      {/* LOCATION FILTER */}
+      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-slate-600 uppercase">Filter by Location:</label>
+          <div className="relative">
+            <select
+              value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
+              className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-lg appearance-none cursor-pointer hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-8"
+            >
+              {LOCATIONS.map((loc) => (
+                <option key={loc.id} value={loc.id}>
+                  {loc.name}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-600 pointer-events-none" />
+          </div>
+        </div>
+        {selectedLocation !== 'all' && (
+          <button
+            onClick={() => setSelectedLocation('all')}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
+          >
+            Clear Filter
+          </button>
+        )}
+      </div>
+
+      {/* LOCATION INDICATOR */}
+      {selectedLocation !== 'all' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-700">
+            <span className="font-semibold">Viewing metrics for:</span> {LOCATIONS.find(l => l.id === selectedLocation)?.name}
+          </p>
+        </div>
+      )}
 
       {/* MANAGEMENT SHORTCUTS */}
       <div className="grid grid-cols-3 gap-3">
@@ -191,7 +218,7 @@ export const HeadDashboard: React.FC<HeadDashboardProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {teamMembers.slice(0, 5).map((member) => {
+              {teamMembers.filter(m => selectedLocation === 'all' || (m.location && m.location.startsWith(LOCATIONS.find(loc => loc.id === selectedLocation)?.name || ''))).slice(0, 5).map((member) => {
                 const memberLeads = leads.filter(l => l.leadOwner === member.id);
                 const converted = memberLeads.filter(l => l.leadStatus === 'Closed').length;
                 const conversionRate = memberLeads.length > 0 ? Math.round((converted / memberLeads.length) * 100) : 0;
@@ -322,57 +349,6 @@ export const HeadDashboard: React.FC<HeadDashboardProps> = ({
           </div>
         </div>
 
-        {/* Summary Metrics */}
-        <div className="mt-4 pt-4 border-t border-slate-200 grid grid-cols-3 gap-3">
-          <div className="p-3 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-lg">
-            <div className="text-xs font-semibold text-emerald-700 uppercase">Total Commission</div>
-            <div className="text-2xl font-bold text-emerald-900 mt-1">₹44.2L</div>
-          </div>
-          <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
-            <div className="text-xs font-semibold text-blue-700 uppercase">Total Pipeline</div>
-            <div className="text-2xl font-bold text-blue-900 mt-1">₹2.09 Cr</div>
-          </div>
-          <div className="p-3 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg">
-            <div className="text-xs font-semibold text-purple-700 uppercase">Pending to Partners</div>
-            <div className="text-2xl font-bold text-purple-900 mt-1">₹15.8L</div>
-          </div>
-        </div>
-      </div>
-
-
-
-      {/* PRODUCT PERFORMANCE BREAKDOWN */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-        <div className="flex items-center gap-2 mb-4">
-          <BarChart3 className="text-slate-600" size={18} />
-          <h3 className="font-bold text-slate-900">Product Performance</h3>
-        </div>
-
-        <div className="space-y-2">
-          {Object.entries(metrics.productMetrics).length > 0 ? (
-            Object.entries(metrics.productMetrics)
-              .sort(([, a], [, b]) => b.count - a.count)
-              .map(([product, data]) => {
-                const qualRate = data.count > 0 ? Math.round((data.qualified / data.count) * 100) : 0;
-                return (
-                  <div key={product} className="flex items-center justify-between p-2 bg-slate-50 rounded hover:bg-slate-100 transition-colors">
-                    <div className="flex-1">
-                      <div className="text-xs font-semibold text-slate-900">{product}</div>
-                      <div className="text-[11px] text-slate-500">{data.count} leads • {qualRate}% qualified</div>
-                    </div>
-                    <div className="w-24 h-1.5 rounded-full bg-slate-200">
-                      <div
-                        className="h-full rounded-full bg-blue-500"
-                        style={{ width: `${Math.min((data.qualified / Math.max(data.count, 1)) * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })
-          ) : (
-            <div className="text-center py-4 text-slate-500 text-xs">No product data available</div>
-          )}
-        </div>
       </div>
 
       {/* QUICK STATS */}
@@ -393,4 +369,3 @@ export const HeadDashboard: React.FC<HeadDashboardProps> = ({
     </div>
   );
 };
-

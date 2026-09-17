@@ -14,6 +14,8 @@ import { StudentLead } from '../types';
 import { calculateLeadSlaInfo, SlaInfo } from '../utils/slaHelpers';
 import { calculateDashboardMetrics } from '../utils/metricsHelpers';
 import { LeadTable } from './LeadTable';
+import { AllLeadsView } from './AllLeadsView';
+import { generateMockAllLeads } from '../data/mockAllLeads';
 
 interface RmDashboardProps {
   leads: StudentLead[];
@@ -43,7 +45,9 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   onStartDiscovery,
   onSimulateInboundLead,
 }) => {
+  const [tableView, setTableView] = useState<'my-active' | 'needs-action' | 'claim-leads' | 'target'>('my-active');
   const [actionFilter, setActionFilter] = useState<'all' | 'breached' | 'callbacks' | 'pending'>('all');
+  const mockAllLeads = useMemo(() => generateMockAllLeads(), []);
 
   // Calculate metrics once - single source of truth
   const metrics = useMemo(() => {
@@ -96,67 +100,91 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
       <div className="grid grid-cols-4 gap-4">
         {/* Card 1: My Active Leads */}
         <div 
-          onClick={() => onViewAllLeads('all')}
-          className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
-          id="kpi-card-my-active-leads"
+          onClick={() => setTableView('my-active')}
+          className={`border rounded-lg p-4 shadow-sm transition-all cursor-pointer group ${
+            tableView === 'my-active'
+              ? 'bg-blue-50 border-blue-300'
+              : 'bg-white border-slate-200 hover:border-slate-300'
+          }`}
         >
           <div className="inline-block px-2 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full mb-3">MY ACTIVE</div>
-          <div className="text-3xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+          <div className={`text-3xl font-bold transition-colors ${tableView === 'my-active' ? 'text-blue-600' : 'text-slate-900 group-hover:text-blue-600'}`}>
             {totalActiveLeadsCount}
           </div>
           <div className="text-xs text-slate-600 mt-2">Assigned to me</div>
         </div>
 
-        {/* Card 2: New Leads */}
+        {/* Card 2: Needs Action */}
         <div 
-          onClick={() => onViewAllLeads('new_leads')}
-          className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
-          id="kpi-card-new-leads"
-        >
-          <div className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full mb-3">NEW LEADS</div>
-          <div className="text-3xl font-bold text-slate-900 group-hover:text-purple-600 transition-colors">
-            {newLeadsCount}
-          </div>
-          <div className="text-xs text-slate-600 mt-2">Assigned today</div>
-        </div>
-
-        {/* Card 3: Calls Due Today */}
-        <div 
-          onClick={() => setActionFilter('all')}
-          className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
-          id="kpi-card-calls-due"
-        >
-          <div className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full mb-3">CALLS DUE</div>
-          <div className="text-3xl font-bold text-slate-900 group-hover:text-orange-600 transition-colors">
-            {callsDueTodayCount}
-          </div>
-          <div className="text-xs text-slate-600 mt-2">Today</div>
-        </div>
-
-        {/* Card 4: Needs Action */}
-        <div 
-          onClick={() => setActionFilter('pending')}
-          className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm hover:border-slate-300 transition-all cursor-pointer group"
-          id="kpi-card-needs-action"
+          onClick={() => setTableView('needs-action')}
+          className={`border rounded-lg p-4 shadow-sm transition-all cursor-pointer group ${
+            tableView === 'needs-action'
+              ? 'bg-red-50 border-red-300'
+              : 'bg-white border-slate-200 hover:border-slate-300'
+          }`}
         >
           <div className="inline-block px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full mb-3">NEEDS ACTION</div>
-          <div className="text-3xl font-bold text-slate-900 group-hover:text-red-600 transition-colors">
+          <div className={`text-3xl font-bold transition-colors ${tableView === 'needs-action' ? 'text-red-600' : 'text-slate-900 group-hover:text-red-600'}`}>
             {pendingActionsCount}
           </div>
           <div className="text-xs text-slate-600 mt-2">Requires action</div>
         </div>
+
+        {/* Card 3: Claim Leads */}
+        <div 
+          onClick={() => setTableView('claim-leads')}
+          className={`border rounded-lg p-4 shadow-sm transition-all cursor-pointer group ${
+            tableView === 'claim-leads'
+              ? 'bg-emerald-50 border-emerald-300'
+              : 'bg-white border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <div className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full mb-3">CLAIM</div>
+          <div className={`text-3xl font-bold transition-colors ${tableView === 'claim-leads' ? 'text-emerald-600' : 'text-slate-900 group-hover:text-emerald-600'}`}>
+            {mockAllLeads.filter(l => !l.leadOwner || l.leadOwner === 'Unassigned').length}
+          </div>
+          <div className="text-xs text-slate-600 mt-2">Available to claim</div>
+        </div>
+
+        {/* Card 4: Target Achievement */}
+        <div 
+          onClick={() => setTableView('target')}
+          className={`border rounded-lg p-4 shadow-sm transition-all cursor-pointer group ${
+            tableView === 'target'
+              ? 'bg-purple-50 border-purple-300'
+              : 'bg-white border-slate-200 hover:border-slate-300'
+          }`}
+        >
+          <div className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-bold rounded-full mb-3">TARGET</div>
+          <div className={`text-3xl font-bold transition-colors ${tableView === 'target' ? 'text-purple-600' : 'text-slate-900 group-hover:text-purple-600'}`}>
+            85%
+          </div>
+          <div className="text-xs text-slate-600 mt-2">Achievement</div>
+        </div>
       </div>
 
 
-
-      {/* Leads Table */}
-      <LeadTable
-        leads={actionableLeads.slice(0, 7).map(({ lead }) => lead)}
-        onSelectLead={onSelectLead}
-        onInitiateCall={onInitiateCall}
-        onQuickLogOutcome={onQuickLogOutcome}
-        enableColumnFilter={false}
-      />
+      {/* Leads Table - shows different content based on selected view */}
+      {tableView === 'claim-leads' ? (
+        <AllLeadsView
+          leads={mockAllLeads}
+          onSelectLead={onSelectLead}
+          onInitiateCall={onInitiateCall}
+          onQuickLogOutcome={onQuickLogOutcome}
+        />
+      ) : (
+        <LeadTable
+          leads={
+            tableView === 'needs-action'
+              ? actionableLeads.slice(0, 7).map(({ lead }) => lead)
+              : leads.slice(0, 7)
+          }
+          onSelectLead={onSelectLead}
+          onInitiateCall={onInitiateCall}
+          onQuickLogOutcome={onQuickLogOutcome}
+          enableColumnFilter={false}
+        />
+      )}
 
 
 
