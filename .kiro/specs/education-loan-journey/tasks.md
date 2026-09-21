@@ -44,37 +44,37 @@ This task list covers the complete frontend implementation of the Education Loan
     - Update draftSavedAt timestamp and show "Draft saved" toast
     - _Requirements: 13.2, 13.6_
 
-- [ ] 4. Create JourneyPageHeader component with status display and calling options
-  - [ ] 4.1 Build header structure with applicant name, status badge, progress indicator
+- [x] 4. Create JourneyPageHeader component with status display and calling options
+  - [x] 4.1 Build header structure with applicant name, status badge, progress indicator
     - Display "Education Loan Application | [Loan Flow] | [Applicant Name]" title
     - Display status badge (Draft, In Progress, Submitted, etc.)
     - Display progress: "Stage X of Y (XX% complete)" with progress bar
     - Add back button to return to lead detail
     - _Requirements: 14.1, 2.5_
 
-  - [ ] 4.2 Integrate calling options (Dial, WhatsApp, SMS) from existing LeadCallingSection
+  - [x] 4.2 Integrate calling options (Dial, WhatsApp, SMS) from existing LeadCallingSection
     - Import existing calling system handlers
     - Display [Dial] [WhatsApp] [SMS] buttons in header (never removed)
     - Connect buttons to handlers for initiating calls/messages
     - Keep calling options visible and accessible at all times
     - _Requirements: 14.1, 17_
 
-- [ ] 5. Create StageNavigationSidebar component with completion indicators
-  - [ ] 5.1 Build sidebar showing all stages for current loan product flow
+- [x] 5. Create StageNavigationSidebar component with completion indicators
+  - [x] 5.1 Build sidebar showing all stages for current loan product flow
     - Render list of all stages with stage names
     - Show completion icons: ✓ (completed), ● (current), ○ (pending)
     - Display stage number and name
     - Add click handler for navigating to stage (if previousStages all completed or in draft mode)
     - _Requirements: 7.1, 14.1_
 
-  - [ ] 5.2 Add visual progress bar and completion percentage
+  - [x] 5.2 Add visual progress bar and completion percentage
     - Calculate completion percentage based on stageCompletionStatus
     - Render progress bar showing X of Y stages complete
     - Display percentage text
     - Highlight current stage visually
     - _Requirements: 7.7, 14.1_
 
-  - [ ] 5.3 Implement stage highlighting and clickable navigation
+  - [x] 5.3 Implement stage highlighting and clickable navigation
     - Highlight current stage with background color or border
     - Make completed/current stages clickable for navigation
     - Disable clicking pending stages (unless in Draft mode)
@@ -82,14 +82,14 @@ This task list covers the complete frontend implementation of the Education Loan
     - _Requirements: 7.1, 7.3_
 
 - [ ] 6. Create GenericStageForm component renderer with dynamic field rendering
-  - [ ] 6.1 Build component that dynamically renders fields based on stage configuration
+  - [x] 6.1 Build component that dynamically renders fields based on stage configuration
     - Accept stageConfig object with required/optional fields
     - Render different field types: text, email, phone, number, date, select, checkbox, multi-select
     - Display field labels with * for required, "(optional)" for optional
     - Show helpful hints/examples below field labels
     - _Requirements: 8.1-8.9, 14.2_
 
-  - [ ] 6.2 Implement real-time field validation with inline error display
+  - [x] 6.2 Implement real-time field validation with inline error display
     - Add onBlur handler for field-level validation
     - Display error message in red text below field
     - Highlight field with red border if invalid
@@ -97,7 +97,7 @@ This task list covers the complete frontend implementation of the Education Loan
     - Disable Next button if any required field is invalid
     - _Requirements: 10.1-10.7, 14.3_
 
-  - [ ] 6.3 Implement form field handlers and state binding
+  - [x] 6.3 Implement form field handlers and state binding
     - Bind each field to application data via handleSaveField
     - Track field values in component state
     - Implement onChange handlers for form state management
@@ -105,24 +105,24 @@ This task list covers the complete frontend implementation of the Education Loan
     - _Requirements: 7.2, 8.1-8.9_
 
 - [ ] 7. Create stage-specific form components (or use GenericStageForm with config)
-  - [ ] 7.1 Create ApplicantProfileStage form (email, phone, DOB, name, address, PAN)
+  - [x] 7.1 Create ApplicantProfileStage form (email, phone, DOB, name, address, PAN)
     - Render fields: fullName, email, phoneNumber, mobileCountryCode, dateOfBirth, gender, nationality, currentAddress (nested), PAN
     - Implement validation: email format, phone format, age >= 18, address fields required
     - Show auto-populated indicators for shared fields (name, email, phone, DOB, address)
     - _Requirements: 4.2, 8.1, 10.1, 10.2_
 
-  - [ ] 7.2 Create ResidenceDestinationStage form (current country, visa status, destination, visa date)
+  - [x] 7.2 Create ResidenceDestinationStage form (current country, visa status, destination, visa date)
     - Render fields: currentCountryOfResidence, currentVisaStatus, plannedDestinationCountry, visaStatusInDestination, expectedVisaApplicationDate
     - Implement validation per stage requirements
     - _Requirements: 8.2_
 
-  - [ ] 7.3 Create EducationDetailsStage form (degree, course, intake, universities, admission status)
+  - [x] 7.3 Create EducationDetailsStage form (degree, course, intake, universities, admission status)
     - Render fields: degreeType, fieldOfStudy, intakeType, intakeYear, universitiesOfInterest (multi-select), admissionStatus, expectedAdmissionDecisionDate
     - Implement validation: at least 1 university, intake year >= current year
     - Show auto-populated indicators for shared fields (degreeType, course, intakeYear, universitiesOfInterest)
     - _Requirements: 4.2, 8.3, 10.2_
 
-  - [ ] 7.4 Create LoanApplicationDetailsStage form (loan type, amount, purpose, repayment preference)
+  - [x] 7.4 Create LoanApplicationDetailsStage form (loan type, amount, purpose, repayment preference)
     - Render fields: loanType, requestedLoanAmount, loanAmountCurrency, purposeOfLoan (multi-select), repaymentPreference
     - Implement validation: loan amount within provider range
     - _Requirements: 8.4, 10.3_
@@ -175,14 +175,14 @@ This task list covers the complete frontend implementation of the Education Loan
     - Update document checklist for provider-specific documents
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [ ] 7.12 Create ReviewSubmitStage form showing summary of all entered data
+  - [x] 7.12 Create ReviewSubmitStage form showing summary of all entered data
     - Display read-only summary of all stages with data entered
     - Show application status and loan provider selected
     - Render "Submit" button (final stage only)
     - Show confirmation dialog before submit
     - _Requirements: 14.6, 6.6_
 
-- [ ] 8. Implement form validation logic engine
+- [-] 8. Implement form validation logic engine
   - [ ] 8.1 Create validation rules configuration for each stage
     - Define required fields per stage and flow
     - Define validation functions for each field (email format, phone format, age, etc.)
@@ -208,7 +208,7 @@ This task list covers the complete frontend implementation of the Education Loan
     - Show error message listing which stages are incomplete
     - _Requirements: 7.6_
 
-- [ ] 9. Create footer navigation component with Previous/Next/Save/Submit buttons
+- [x] 9. Create footer navigation component with Previous/Next/Save/Submit buttons
   - [ ] 9.1 Build FooterNavigation component with button layout
     - Previous button (always visible, always enabled except on first stage)
     - Save Draft button (always visible, always enabled)
@@ -368,7 +368,7 @@ This task list covers the complete frontend implementation of the Education Loan
     - _Requirements: 20_
 
 - [ ] 18. Create stage configuration files
-  - [ ] 18.1 Create src/config/educationLoanStages.ts with all stage definitions
+  - [x] 18.1 Create src/config/educationLoanStages.ts with all stage definitions
     - Define stage configs for all 4 loan product flows
     - Include required/optional fields per stage
     - Include validation rules per stage

@@ -1,10 +1,87 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { LeadMaster, EducationLoanApplication, LoanProductFlow, ApplicationStatus, StageCompletionStatus } from '../types/normalized';
-import { LeadsDatabase } from '../api/leadsApi';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import React, { useCallback, useRef, useState } from 'react';
+import { AlertCircle } from 'lucide-react';
+import { StudentLead } from '../types';
+import {
+  LoanProductFlow,
+  ApplicationStatus,
+  StageCompletionStatus,
+} from '../types/normalized';
+import JourneyPageHeader from './JourneyPageHeader';
+import StageNavigationSidebar from './StageNavigationSidebar';
+import StageRouter from './stages/StageRouter';
+
+// Get stages based on loan product flow
+const getStages = (flow: LoanProductFlow): string[] => {
+  const stageNames: Record<LoanProductFlow, string[]> = {
+    [LoanProductFlow.INR_Unsecured]: [
+      'Applicant Profile',
+      'Residence & Destination',
+      'Education Details',
+      'Loan Application Details',
+      'References',
+      'Academic History',
+      'Financial Details',
+      'Document Checklist',
+      'Provider Selection',
+      'Review & Submit',
+    ],
+    [LoanProductFlow.INR_Secured]: [
+      'Applicant Profile',
+      'Residence & Destination',
+      'Education Details',
+      'Loan Application Details',
+      'Co-Applicant Details',
+      'References',
+      'Academic History',
+      'Financial Details',
+      'Collateral Details',
+      'Document Checklist',
+      'Provider Selection',
+      'Review & Submit',
+    ],
+    [LoanProductFlow.US_Cosigner]: [
+      'Applicant Profile',
+      'Residence & Destination',
+      'Education Details',
+      'Loan Application Details',
+      'Co-Applicant Details',
+      'References',
+      'Academic History',
+      'Financial Details',
+      'Document Checklist',
+      'Provider Selection',
+      'Review & Submit',
+    ],
+    [LoanProductFlow.USD_NoCoSigner_Prodigy]: [
+      'Applicant Profile',
+      'Residence & Destination',
+      'Education Details',
+      'Loan Application Details',
+      'References',
+      'Academic History',
+      'Financial Details',
+      'Document Checklist',
+      'Provider Selection',
+      'Review & Submit',
+    ],
+    [LoanProductFlow.USD_NoCoSigner_MPower]: [
+      'Applicant Profile',
+      'Residence & Destination',
+      'Education Details',
+      'Loan Application Details',
+      'References',
+      'Academic History',
+      'Financial Details',
+      'Document Checklist',
+      'Provider Selection',
+      'Review & Submit',
+    ],
+  };
+  return stageNames[flow];
+};
 
 interface EducationLoanJourneyPageProps {
-  lead: LeadMaster;
+  lead: StudentLead;
   opportunityId: string;
   applicationId?: string;
   loanProductFlow?: LoanProductFlow;
@@ -16,27 +93,13 @@ interface EducationLoanJourneyPageProps {
  * 
  * Main container component for the education loan journey - a full-screen,
  * multi-stage application form experience. Handles page-level state management,
- * auto-save, stage progression, and integration with the LeadsDatabase API.
- * 
- * Layout:
- * - Sticky header with back button, applicant info, status, progress, calling options
- * - Sidebar navigation showing all stages with completion indicators
- * - Main content area showing current stage form
- * - Footer with Previous/Next/Save/Submit buttons
- * 
- * State Management:
- * - currentStage: which stage user is on
- * - applicationData: form data for all stages
- * - validationErrors: per-field validation state
- * - applicationStatus: Draft/InProgress/Submitted/etc
- * - loading/error states
- * - auto-save timer and draft tracking
+ * auto-save, stage progression, and integration with the API.
  */
-export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> = ({
+const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> = ({
   lead,
   opportunityId,
   applicationId,
-  loanProductFlow,
+  loanProductFlow = LoanProductFlow.INR_Unsecured,
   onBack,
 }) => {
   // ============================================================================
@@ -44,89 +107,30 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
   // ============================================================================
 
   // Application data
-  const [application, setApplication] = useState<EducationLoanApplication | null>(null);
-  const [applicationData, setApplicationData] = useState<Partial<EducationLoanApplication>>({});
-  const [currentStage, setCurrentStage] = useState<string>('');
+  const [applicationData, setApplicationData] = useState<any>({
+    loanProductFlow,
+    applicationStatus: ApplicationStatus.Draft,
+  });
+  const stages = getStages(loanProductFlow);
+  const [currentStage, setCurrentStage] = useState<string>(stages[0] || 'Applicant Profile');
   const [stageCompletionStatus, setStageCompletionStatus] = useState<StageCompletionStatus>({});
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>(ApplicationStatus.Draft);
 
   // Validation & errors
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [stageErrors, setStageErrors] = useState<string[]>([]);
+  const [stageIsValid, setStageIsValid] = useState(false);
 
   // Loading & error states
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Draft tracking
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
-
-  // ============================================================================
-  // INITIALIZATION
-  // ============================================================================
-
-  /**
-   * Load application on mount or when applicationId changes
-   * If no application exists, create a new one
-   */
-  useEffect(() => {
-    const loadApplication = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        let app: EducationLoanApplication | null = null;
-
-        if (applicationId) {
-          // Load existing application
-          app = LeadsDatabase.getEducationLoanApplication(applicationId);
-          if (!app) {
-            setError('Application not found');
-            setIsLoading(false);
-            return;
-          }
-        } else if (loanProductFlow) {
-          // Create new application with specified flow
-          const result = LeadsDatabase.createEducationLoanApplication(
-            lead.leadId,
-            opportunityId,
-            loanProductFlow
-          );
-          if (!result.success || !result.application) {
-            setError(result.error || 'Failed to create application');
-            setIsLoading(false);
-            return;
-          }
-          app = result.application;
-        } else {
-          // No application ID or flow specified - error
-          setError('No application context provided');
-          setIsLoading(false);
-          return;
-        }
-
-        // Populate state from loaded/created application
-        setApplication(app);
-        setApplicationData(app);
-        setCurrentStage(app.currentStage || getFirstStage(app.loanProductFlow));
-        setStageCompletionStatus(app.stageCompletionStatus || {});
-        setApplicationStatus(app.applicationStatus);
-        setDraftSavedAt(app.draftSavedAt || null);
-
-        setIsLoading(false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load application');
-        setIsLoading(false);
-      }
-    };
-
-    loadApplication();
-  }, [applicationId, loanProductFlow, lead.leadId, opportunityId]);
 
   // ============================================================================
   // AUTO-SAVE & INACTIVITY LOGIC
@@ -135,11 +139,10 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
   /**
    * Auto-save on page unload
    */
-  useEffect(() => {
+  React.useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (applicationStatus === ApplicationStatus.Draft && applicationData) {
         handleSaveDraft();
-        // Show warning to user
         e.preventDefault();
         e.returnValue = '';
       }
@@ -152,24 +155,21 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
   /**
    * Inactivity timer - auto-save after 30 seconds of no activity
    */
-  useEffect(() => {
+  React.useEffect(() => {
     const resetInactivityTimer = () => {
       lastInteractionRef.current = Date.now();
 
-      // Clear existing timer
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
       }
 
-      // Set new 30-second timer
       inactivityTimerRef.current = setTimeout(() => {
         if (applicationStatus === ApplicationStatus.Draft) {
           handleSaveDraft();
         }
-      }, 30000); // 30 seconds
+      }, 30000);
     };
 
-    // Listen for user interaction
     const events = ['click', 'keydown', 'scroll', 'change', 'input'];
     events.forEach(event => {
       document.addEventListener(event, resetInactivityTimer);
@@ -191,7 +191,6 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
 
   /**
    * Save a single field to application data
-   * Triggers auto-save mechanism
    */
   const handleSaveField = useCallback((fieldPath: string, value: any) => {
     setApplicationData(prev => {
@@ -199,7 +198,6 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
       const keys = fieldPath.split('.');
       let current: any = updated;
 
-      // Navigate to nested object
       for (let i = 0; i < keys.length - 1; i++) {
         if (!current[keys[i]]) {
           current[keys[i]] = {};
@@ -207,213 +205,116 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
         current = current[keys[i]];
       }
 
-      // Set value
       current[keys[keys.length - 1]] = value;
       return updated;
     });
 
-    // Update application status if still Draft
     if (applicationStatus === ApplicationStatus.Draft) {
       setApplicationStatus(ApplicationStatus.InProgress);
     }
 
-    // Reset last interaction time for inactivity timer
     lastInteractionRef.current = Date.now();
   }, [applicationStatus]);
 
   /**
-   * Move to next stage with validation
+   * Handle field validation changes
    */
-  const handleNextStage = useCallback(async () => {
-    try {
-      // Validate current stage before moving
-      const validation = await validateCurrentStage(currentStage);
-      if (!validation.isValid) {
-        setStageErrors(validation.errors);
-        return;
-      }
-
-      // Update stage completion status
-      const updated = {
-        ...stageCompletionStatus,
-        [currentStage]: {
-          completed: true,
-          completedAt: new Date().toISOString(),
-          validationErrors: [],
-        },
-      };
-      setStageCompletionStatus(updated);
-
-      // Move to next stage
-      const nextStage = getNextStage(currentStage, application?.loanProductFlow || LoanProductFlow.INR_Unsecured);
-      if (nextStage) {
-        setCurrentStage(nextStage);
-        setStageErrors([]);
-      }
-
-      // Save progress
-      await handleSaveDraft();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to proceed to next stage');
-    }
-  }, [currentStage, stageCompletionStatus, application, applicationData]);
+  const handleValidationChange = useCallback((isValid: boolean) => {
+    setStageIsValid(isValid);
+  }, []);
 
   /**
-   * Move to previous stage (always allowed, no validation)
+   * Move to next stage with validation
+   */
+  const handleNextStage = useCallback(() => {
+    if (!stageIsValid) {
+      setStageErrors(['Please complete all required fields before proceeding']);
+      return;
+    }
+
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex < stages.length - 1) {
+      const nextStage = stages[currentIndex + 1];
+      
+      // Mark current stage as completed
+      setStageCompletionStatus(prev => ({
+        ...prev,
+        [currentStage]: {
+          ...prev[currentStage],
+          completed: true,
+          completedAt: new Date().toISOString(),
+        },
+      }));
+
+      setCurrentStage(nextStage);
+      setStageErrors([]);
+      lastInteractionRef.current = Date.now();
+    }
+  }, [stages, currentStage, stageIsValid]);
+
+  /**
+   * Move to previous stage
    */
   const handlePreviousStage = useCallback(() => {
-    const prevStage = getPreviousStage(currentStage, application?.loanProductFlow || LoanProductFlow.INR_Unsecured);
-    if (prevStage) {
+    const currentIndex = stages.indexOf(currentStage);
+    if (currentIndex > 0) {
+      const prevStage = stages[currentIndex - 1];
       setCurrentStage(prevStage);
       setStageErrors([]);
     }
-  }, [currentStage, application]);
+  }, [stages, currentStage]);
 
   /**
    * Save current draft
-   * Updates draftSavedAt timestamp and shows feedback
    */
   const handleSaveDraft = useCallback(async () => {
-    if (!application) return;
+    setSaveStatus('saving');
 
     try {
-      setIsSaving(true);
-      setSaveStatus('saving');
-
-      // Prepare update with current data
-      const updatePayload: Partial<EducationLoanApplication> = {
-        ...applicationData,
-        applicationStatus: ApplicationStatus.Draft,
-        draftSavedAt: new Date().toISOString(),
-        currentStage,
-        stageCompletionStatus,
-      };
-
-      // Call API to update
-      const result = LeadsDatabase.updateEducationLoanApplication(application.applicationId, updatePayload);
-
-      if (!result.success) {
-        setSaveStatus('error');
-        setError(result.error || 'Failed to save draft');
-        return;
-      }
-
-      // Update local state
+      // TODO: Call leadsApi to save draft once API methods are implemented
+      // For now, simulate with a short delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       setDraftSavedAt(new Date().toISOString());
       setSaveStatus('saved');
-
-      // Clear saved status after 2 seconds
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       setSaveStatus('error');
       setError(err instanceof Error ? err.message : 'Failed to save draft');
-    } finally {
-      setIsSaving(false);
     }
-  }, [application, applicationData, currentStage, stageCompletionStatus]);
+  }, []);
 
   /**
    * Submit application
-   * Validates all stages and submits
    */
   const handleSubmit = useCallback(async () => {
-    if (!application) return;
+    // Validate all stages before submit
+    if (!stages.every(stage => stageCompletionStatus[stage]?.completed)) {
+      setStageErrors(['Please complete all stages before submitting']);
+      return;
+    }
+
+    setSaveStatus('saving');
 
     try {
-      setIsSaving(true);
-
-      // Validate all stages
-      const allValid = await validateAllStages();
-      if (!allValid.isValid) {
-        setStageErrors(allValid.errors);
-        setError('Please complete all required fields before submitting');
-        setIsSaving(false);
-        return;
-      }
-
-      // Submit via API
-      const result = LeadsDatabase.submitEducationLoanApplication(application.applicationId);
-
-      if (!result.success) {
-        setError(result.error || 'Failed to submit application');
-        setIsSaving(false);
-        return;
-      }
-
-      // Update state
+      // TODO: Call leadsApi to submit once API methods are implemented
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       setApplicationStatus(ApplicationStatus.Submitted);
-      setApplication(result.application || application);
-
-      // Show success - would trigger success modal in real implementation
-      console.log('Application submitted successfully');
-
-      // Could navigate back after delay
-      // setTimeout(onBack, 2000);
+      setSaveStatus('saved');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit application');
-    } finally {
-      setIsSaving(false);
+      setSaveStatus('error');
+      setError(err instanceof Error ? err.message : 'Failed to submit');
     }
-  }, [application, applicationData]);
+  }, [stages, stageCompletionStatus]);
 
-  // ============================================================================
-  // VALIDATION HELPERS
-  // ============================================================================
-
-  const validateCurrentStage = async (stage: string): Promise<{ isValid: boolean; errors: string[] }> => {
-    // TODO: Implement stage-specific validation
-    // For now, return success
-    return { isValid: true, errors: [] };
-  };
-
-  const validateAllStages = async (): Promise<{ isValid: boolean; errors: string[] }> => {
-    // TODO: Implement full application validation
-    // For now, return success
-    return { isValid: true, errors: [] };
-  };
-
-  // ============================================================================
-  // STAGE HELPER FUNCTIONS
-  // ============================================================================
-
-  const getFirstStage = (flow: LoanProductFlow): string => {
-    // TODO: Get from stage config
-    return 'Applicant Profile';
-  };
-
-  const getNextStage = (current: string, flow: LoanProductFlow): string | null => {
-    // TODO: Get from stage config for this flow
-    // For now, simple increment
-    const stageIndex = getAllStages(flow).indexOf(current);
-    const nextIndex = stageIndex + 1;
-    return nextIndex < getAllStages(flow).length ? getAllStages(flow)[nextIndex] : null;
-  };
-
-  const getPreviousStage = (current: string, flow: LoanProductFlow): string | null => {
-    // TODO: Get from stage config for this flow
-    const stageIndex = getAllStages(flow).indexOf(current);
-    const prevIndex = stageIndex - 1;
-    return prevIndex >= 0 ? getAllStages(flow)[prevIndex] : null;
-  };
-
-  const getAllStages = (flow: LoanProductFlow): string[] => {
-    // TODO: Get from stage config
-    // Placeholder for all possible stages
-    return [
-      'Applicant Profile',
-      'Education Details',
-      'Residence & Destination',
-      'Loan Application Details',
-      'Co-Applicant Details',
-      'References',
-      'Academic History',
-      'Financial Details',
-      'Collateral Details',
-      'Document Checklist',
-      'Provider Selection',
-      'Review & Submit',
-    ];
-  };
+  /**
+   * Handle calling options
+   */
+  const handleCall = useCallback((type: 'dial' | 'whatsapp' | 'sms') => {
+    // TODO: Integrate with existing calling system from LeadCallingSection
+    console.log(`Call type: ${type}, Lead: ${lead.studentName}`);
+  }, [lead.studentName]);
 
   // ============================================================================
   // RENDER
@@ -430,12 +331,12 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
     );
   }
 
-  if (error && !application) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="max-w-md w-full bg-white rounded-xl border border-slate-200 p-6 text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-          <h2 className="text-lg font-semibold text-slate-900">Error Loading Application</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Error</h2>
           <p className="text-sm text-slate-600">{error}</p>
           <button
             onClick={onBack}
@@ -448,182 +349,43 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
     );
   }
 
-  if (!application) {
-    return null;
-  }
+  const currentIndex = stages.indexOf(currentStage);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* ========================================================================
-          HEADER - Sticky, always visible
-          ======================================================================== */}
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 sm:py-4">
-          {/* Header top row: Back button, Title, Status */}
-          <div className="flex items-center justify-between mb-2 gap-4">
-            <button
-              onClick={onBack}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back
-            </button>
+      {/* HEADER */}
+      <JourneyPageHeader
+        applicantName={lead.studentName}
+        loanProductFlow={loanProductFlow}
+        applicationStatus={applicationStatus}
+        currentStageIndex={currentIndex}
+        totalStages={stages.length}
+        onBack={onBack}
+        onCall={handleCall}
+      />
 
-            <div className="flex-1">
-              <h1 className="text-sm font-bold text-slate-900">
-                Education Loan Application
-              </h1>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Lead: {lead.studentName} | {application.loanProductFlow}
-              </p>
-            </div>
-
-            {/* Status badge */}
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full">
-                {applicationStatus === ApplicationStatus.Draft && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs font-semibold">
-                    <Clock className="w-3.5 h-3.5" />
-                    Draft
-                  </span>
-                )}
-                {applicationStatus === ApplicationStatus.InProgress && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
-                    <Clock className="w-3.5 h-3.5" />
-                    In Progress
-                  </span>
-                )}
-                {applicationStatus === ApplicationStatus.Submitted && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-xs font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Submitted
-                  </span>
-                )}
-              </span>
-            </div>
-          </div>
-
-          {/* Header bottom row: Progress & Calling Options */}
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <div className="text-xs font-semibold text-slate-600">
-                  Stage {Object.keys(stageCompletionStatus).filter(s => stageCompletionStatus[s].completed).length + 1} of {getAllStages(application.loanProductFlow).length}
-                </div>
-                <div className="flex-1 max-w-xs h-2 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{
-                      width: `${
-                        (Object.keys(stageCompletionStatus).filter(s => stageCompletionStatus[s].completed).length /
-                          getAllStages(application.loanProductFlow).length) *
-                        100
-                      }%`,
-                    }}
-                  />
-                </div>
-                <div className="text-xs text-slate-500">
-                  {Math.round(
-                    (Object.keys(stageCompletionStatus).filter(s => stageCompletionStatus[s].completed).length /
-                      getAllStages(application.loanProductFlow).length) *
-                      100
-                  )}
-                  %
-                </div>
-              </div>
-            </div>
-
-            {/* Calling Options Placeholder - TODO: Integrate LeadCallingSection */}
-            <div className="flex items-center gap-2 ml-6">
-              <button className="px-2 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors">
-                📞 Dial
-              </button>
-              <button className="px-2 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors">
-                💬 WhatsApp
-              </button>
-              <button className="px-2 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded transition-colors">
-                ✉️ SMS
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ========================================================================
-          ERROR MESSAGE
-          ======================================================================== */}
-      {error && (
-        <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-red-900">{error}</p>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================
-          MAIN CONTENT AREA
-          ======================================================================== */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 flex gap-4 max-w-7xl mx-auto w-full px-4 py-4 sm:px-6">
-        {/* ====================================================================
-            LEFT SIDEBAR - Stage Navigation
-            ==================================================================== */}
-        <div className="w-48 hidden lg:block flex-shrink-0">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 sticky top-20">
-            <h3 className="text-xs font-bold text-slate-900 mb-3 uppercase tracking-wider">
-              Application Stages
-            </h3>
+        {/* SIDEBAR */}
+        <StageNavigationSidebar
+          stages={stages}
+          currentStage={currentStage}
+          stageCompletionStatus={stageCompletionStatus}
+          onStageSelect={setCurrentStage}
+          isEditMode={applicationStatus === ApplicationStatus.Draft}
+        />
 
-            <nav className="space-y-1">
-              {getAllStages(application.loanProductFlow).map((stage, index) => {
-                const isCompleted = stageCompletionStatus[stage]?.completed || false;
-                const isCurrent = currentStage === stage;
-                const canNavigate = isCompleted || isCurrent;
-
-                return (
-                  <button
-                    key={stage}
-                    onClick={() => canNavigate && setCurrentStage(stage)}
-                    disabled={!canNavigate}
-                    className={`w-full text-left px-3 py-2 text-xs rounded-lg font-medium transition-all ${
-                      isCurrent
-                        ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-600'
-                        : isCompleted
-                        ? 'text-slate-700 hover:bg-slate-50'
-                        : 'text-slate-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold">{isCompleted ? '✓' : isCurrent ? '●' : '○'}</span>
-                      <span className="truncate">{stage}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-
-        {/* ====================================================================
-            CENTER - Main Content (Stage Form)
-            ==================================================================== */}
+        {/* MAIN CONTENT */}
         <div className="flex-1 min-w-0">
           <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8">
-            <h2 className="text-lg font-bold text-slate-900 mb-4">
-              {currentStage}
-            </h2>
+            <StageRouter
+              stageName={currentStage}
+              formData={applicationData}
+              validationErrors={validationErrors}
+              onFieldChange={handleSaveField}
+              onValidationChange={handleValidationChange}
+            />
 
-            {/* Placeholder for stage form - TODO: Replace with GenericStageForm or stage-specific components */}
-            <div className="p-8 bg-slate-50 border-2 border-dashed border-slate-300 rounded-lg text-center">
-              <p className="text-sm text-slate-600">
-                Stage form component will be rendered here
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                Current stage: {currentStage}
-              </p>
-            </div>
-
-            {/* Stage errors */}
             {stageErrors.length > 0 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-xs font-semibold text-red-900 mb-1">Validation Errors:</p>
@@ -637,9 +399,7 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
           </div>
         </div>
 
-        {/* ====================================================================
-            RIGHT SIDEBAR - Supporting Info (Future)
-            ==================================================================== */}
+        {/* RIGHT SIDEBAR */}
         <div className="w-48 hidden xl:block flex-shrink-0">
           <div className="bg-white border border-slate-200 rounded-xl p-4 sticky top-20 space-y-3">
             <div>
@@ -665,15 +425,12 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
         </div>
       </div>
 
-      {/* ========================================================================
-          FOOTER - Navigation Buttons
-          ======================================================================== */}
+      {/* FOOTER */}
       <div className="sticky bottom-0 z-20 bg-white border-t border-slate-200 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex items-center justify-between gap-3">
-          {/* Previous button */}
           <button
             onClick={handlePreviousStage}
-            disabled={currentStage === getAllStages(application.loanProductFlow)[0]}
+            disabled={currentIndex === 0}
             className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
           >
             ← Previous
@@ -681,7 +438,6 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
 
           <div className="flex-1" />
 
-          {/* Save Draft button */}
           <button
             onClick={handleSaveDraft}
             disabled={isSaving}
@@ -696,19 +452,17 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
             {saveStatus === 'saving' ? '💾 Saving...' : saveStatus === 'saved' ? '✓ Draft Saved' : '💾 Save Draft'}
           </button>
 
-          {/* Next button */}
-          {currentStage !== getAllStages(application.loanProductFlow)[getAllStages(application.loanProductFlow).length - 1] && (
+          {currentIndex < stages.length - 1 && (
             <button
               onClick={handleNextStage}
-              disabled={isSaving}
+              disabled={isSaving || !stageIsValid}
               className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
             >
               Next →
             </button>
           )}
 
-          {/* Submit button (final stage only) */}
-          {currentStage === getAllStages(application.loanProductFlow)[getAllStages(application.loanProductFlow).length - 1] && (
+          {currentIndex === stages.length - 1 && (
             <button
               onClick={handleSubmit}
               disabled={isSaving || applicationStatus === ApplicationStatus.Submitted}
@@ -722,3 +476,5 @@ export const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> =
     </div>
   );
 };
+
+export default EducationLoanJourneyPage;

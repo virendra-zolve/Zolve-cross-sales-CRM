@@ -13,7 +13,7 @@ import { TeamMemberDetailView } from './components/TeamMemberDetailView';
 import { PartnerDetailView } from './components/PartnerDetailView';
 import { LeadDetailViewRefactored } from './components/LeadDetailViewRefactored';
 import { EducationLoanDetailView } from './components/EducationLoanDetailView';
-import { EducationLoanJourneyPage } from './components/EducationLoanJourneyPage';
+import EducationLoanJourneyPage from './components/EducationLoanJourneyPage';
 import { BulkUploadModal } from './components/BulkUploadModal';
 import { NewLeadModal } from './components/NewLeadModal';
 import { CreateLeadChoiceModal } from './components/CreateLeadChoiceModal';
@@ -465,11 +465,13 @@ export default function App() {
     );
   };
 
-  const handleBulkReassignLeads = (leadIds: string[], newOwner: string, newTeam?: string) => {
-    const derivedTeam = newTeam || (newOwner.includes('Ankit') ? 'Banking & Forex Team' : newOwner.includes('John') ? 'Footwork' : 'Zolve');
+  const handleBulkReassignLeads = (leadsToAssign: StudentLead[], assignment: { agentId?: string }) => {
+    if (!assignment.agentId) return;
+    const newOwner = assignment.agentId;
+    const derivedTeam = newOwner.includes('Ankit') ? 'Banking & Forex Team' : newOwner.includes('John') ? 'Footwork' : 'Zolve';
     setLeads((prev) =>
       prev.map((lead) => {
-        if (!leadIds.includes(lead.id)) return lead;
+        if (!leadsToAssign.find(l => l.id === lead.id)) return lead;
         const { updatedLead } = createLeadAssignment(lead, newOwner, derivedTeam, 'Bulk reallocation for workload balance', 'Manager Virendra');
         return updatedLead;
       })
