@@ -39,7 +39,7 @@ export const KpiBar: React.FC<KpiBarProps> = ({
       label: 'KPI Overdue',
       sublabel: 'Exceeded response target',
       count: overdueKpiCount,
-      color: 'text-[#D91C24]',
+      color: 'text-[#2563EB]',
       badge: overdueKpiCount > 0 ? 'Urgent' : undefined,
     },
     {
@@ -71,7 +71,7 @@ export const KpiBar: React.FC<KpiBarProps> = ({
                 {card.label}
               </span>
               {card.badge && (
-                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-[#D91C24] border border-rose-200">
+                <span className="text-[10px] font-semibold px-1.5 py-0.2 rounded bg-blue-50 text-[#2563EB] border border-blue-200">
                   {card.badge}
                 </span>
               )}

@@ -265,7 +265,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           </button>
 
           <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
-            <div className="w-7 h-7 rounded-lg bg-[#D91C24]/10 text-[#D91C24] flex items-center justify-center font-bold">
+            <div className="w-7 h-7 rounded-lg bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center font-bold">
               <GraduationCap className="w-4 h-4" />
             </div>
             <div>
@@ -311,7 +311,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
               </button>
               <button
                 onClick={handleSaveLoanProfile}
-                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-md shadow-xs transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-md shadow-xs transition-colors cursor-pointer"
                 id="save-loan-profile-btn"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -344,7 +344,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           onClick={() => setActiveTab('overview')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'overview'
-              ? 'bg-[#D91C24] text-white shadow-xs'
+              ? 'bg-[#2563EB] text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -354,7 +354,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           onClick={() => setActiveTab('disbursement')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'disbursement'
-              ? 'bg-[#D91C24] text-white shadow-xs'
+              ? 'bg-[#2563EB] text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -364,7 +364,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           onClick={() => setActiveTab('documents')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'documents'
-              ? 'bg-[#D91C24] text-white shadow-xs'
+              ? 'bg-[#2563EB] text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -374,7 +374,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           onClick={() => setActiveTab('coapplicant')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'coapplicant'
-              ? 'bg-[#D91C24] text-white shadow-xs'
+              ? 'bg-[#2563EB] text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
@@ -392,7 +392,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
             <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3.5">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-[#D91C24]" />
+                  <CreditCard className="w-4 h-4 text-[#2563EB]" />
                   <h3 className="text-sm font-bold text-slate-900">Loan Details & Lender Status</h3>
                 </div>
                 <span className="text-xs text-slate-500 font-mono">
@@ -469,7 +469,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
                               : current.filter(l => l !== lender);
                             handleFieldChange('lendersAppliedTo', updated as any);
                           }}
-                          className="w-3.5 h-3.5 text-[#D91C24] rounded border-slate-300 focus:ring-[#D91C24]"
+                          className="w-3.5 h-3.5 text-[#2563EB] rounded border-slate-300 focus:ring-[#2563EB]"
                         />
                         <span className="font-medium text-slate-700">{lender}</span>
                       </label>
@@ -531,14 +531,14 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
             <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-[#D91C24]" />
+                  <Phone className="w-4 h-4 text-[#2563EB]" />
                   <span>Call & Status</span>
                 </h3>
               </div>
 
               <button
                 onClick={() => onInitiateCall && onInitiateCall(lead)}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg shadow-xs transition-colors cursor-pointer"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg shadow-xs transition-colors cursor-pointer"
                 id="loan-detail-call-btn"
               >
                 <Phone className="w-4 h-4 fill-white" />
@@ -558,7 +558,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
                       }}
                       className={`px-2 py-1.5 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
                         lead.callingStatus === status
-                          ? 'bg-[#D91C24] text-white shadow-xs'
+                          ? 'bg-[#2563EB] text-white shadow-xs'
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       }`}
                     >
@@ -622,7 +622,7 @@ export const EducationLoanDetailView: React.FC<EducationLoanDetailViewProps> = (
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Send className="w-4 h-4 text-[#D91C24]" />
+                <Send className="w-4 h-4 text-[#2563EB]" />
                 <span>Disbursement Tranche Schedule</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">

@@ -125,7 +125,7 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
               className={`relative p-2 rounded-lg border text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center ${
                 breachCount > 0 
-                  ? 'bg-rose-50 border-rose-200 text-[#D91C24] hover:bg-rose-100' 
+                  ? 'bg-blue-50 border-blue-200 text-[#2563EB] hover:bg-blue-100' 
                   : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
               title={`${totalNotifications} notifications`}
@@ -133,7 +133,7 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Bell className="w-4 h-4" />
               {totalNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[#D91C24] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full min-w-4 text-center">
+                <span className="absolute -top-1 -right-1 bg-[#2563EB] text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full min-w-4 text-center">
                   {totalNotifications}
                 </span>
               )}
@@ -165,7 +165,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ) : (
                     <div className="divide-y divide-slate-100">
                       {notifications.map((notif) => {
-                        const borderColor = notif.severity === 'high' ? 'border-[#D91C24]' : notif.severity === 'medium' ? 'border-amber-400' : 'border-blue-400';
+                        const borderColor = notif.severity === 'high' ? 'border-[#2563EB]' : notif.severity === 'medium' ? 'border-amber-400' : 'border-blue-400';
                         const bgColor = notif.severity === 'high' ? 'bg-rose-50' : notif.severity === 'medium' ? 'bg-amber-50' : 'bg-blue-50';
                         
                         return (
@@ -203,7 +203,7 @@ export const Header: React.FC<HeaderProps> = ({
                         onSelectOverdueFilter();
                         setIsNotificationOpen(false);
                       }}
-                      className="text-xs font-semibold text-[#D91C24] hover:text-[#B30018] transition-colors"
+                      className="text-xs font-semibold text-[#2563EB] hover:text-[#1E40AF] transition-colors"
                     >
                       View Details →
                     </button>
@@ -217,7 +217,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenNewLead}
             id="header-create-lead-btn"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg shadow-xs transition-all cursor-pointer hover:shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg shadow-xs transition-all cursor-pointer hover:shadow-sm"
           >
             <UserPlus className="w-3.5 h-3.5" />
             <span>+ Create Lead</span>

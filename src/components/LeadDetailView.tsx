@@ -2,26 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, 
   Phone, 
-  Mail, 
   GraduationCap, 
   DollarSign, 
   FileText, 
-  UserCheck, 
-  Edit3,
   X,
   Save,
   ArrowRightLeft,
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  Menu,
   Users,
   BookOpen,
-  Award,
   ShoppingBag,
   LogIn,
   Home,
-  Settings
 } from 'lucide-react';
 import { 
   StudentLead, 
@@ -41,7 +35,7 @@ interface LeadDetailViewProps {
   onOpenEducationLoan?: (lead: StudentLead) => void;
 }
 
-type MenuSection = 'all-profile' | 'academic' | 'assignments' | 'documents' | 'products' | 'product-detail';
+type MenuSection = 'all-profile' | 'notes' | 'academic' | 'assignments' | 'documents' | 'products' | 'product-detail';
 
 const JOURNEY_STAGES: JourneyStage[] = [
   'Pre-Test', 'Test Preparation', 'Counseling', 'Application',
@@ -70,9 +64,11 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
   const [targetAssigner, setTargetAssigner] = useState<string>('Virendra');
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(null);
   const [newNoteText, setNewNoteText] = useState('');
-  const [editingProductId, setEditingProductId] = useState<MasterProduct | null>(null);
   const [expandedProduct, setExpandedProduct] = useState<MasterProduct | null>(null);
   const [isCallStatusDropdownOpen, setIsCallStatusDropdownOpen] = useState(false);
+  const [isAddNotesModalOpen, setIsAddNotesModalOpen] = useState(false);
+  const [nextCallDate, setNextCallDate] = useState<string>('');
+  const [callStatus, setCallStatus] = useState<string>(lead.callingStatus || 'Not Attempted');
 
   const isDirty = useMemo(() => {
     return JSON.stringify(draftLead) !== JSON.stringify(lead);
@@ -190,7 +186,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
     switch (product) {
       case 'Education Loan':
       case 'Refinance':
-        return <GraduationCap className="w-4 h-4 text-[#D91C24]" />;
+        return <GraduationCap className="w-4 h-4 text-[#2563EB]" />;
       case 'Bank Account':
       case 'NRE/NRO Account':
         return <Home className="w-4 h-4 text-emerald-600" />;
@@ -210,7 +206,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
       case 'Interested':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       default:
-        return 'bg-rose-50 text-[#D91C24] border-rose-200';
+        return 'bg-blue-50 text-[#2563EB] border-blue-200';
     }
   };
 
@@ -221,8 +217,8 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
       {/* ===== STICKY HEADER ===== */}
       <div className="sticky top-16 z-30 bg-white border-b border-slate-200 shadow-xs">
         <div className="p-3 space-y-2">
-          {/* Top Row: Back button + Lead ID + Save Controls */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+          {/* Top Row: Back button + Lead ID */}
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={onBack}
@@ -235,78 +231,107 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
               <span className="text-sm font-semibold text-slate-800 truncate">{draftLead.studentName}</span>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap justify-end">
-              {isDirty && (
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
-                  <span className="text-[11px] font-semibold text-amber-800">Unsaved</span>
-                  <button
-                    onClick={handleDiscardChanges}
-                    className="text-[11px] text-slate-600 hover:underline cursor-pointer font-medium"
-                  >
-                    Discard
-                  </button>
-                  <button
-                    onClick={handleSaveChanges}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-md cursor-pointer"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    Save
-                  </button>
+            <div className="flex items-center gap-2 justify-end">
+            </div>
+          </div>
+
+          {/* Call Controls Row */}
+          <div className="flex items-center gap-2 border-t border-slate-200 pt-2">
+            {isDirty && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                <span className="text-[11px] font-semibold text-amber-800">Unsaved</span>
+                <button
+                  onClick={handleDiscardChanges}
+                  className="text-[11px] text-slate-600 hover:underline cursor-pointer font-medium"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={handleSaveChanges}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-md cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Save
+                </button>
+              </div>
+            )}
+            {saveSuccessMessage && (
+              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                ✓ {saveSuccessMessage}
+              </span>
+            )}
+            <button
+              onClick={() => setIsAssignModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+              <span>Assign</span>
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setIsCallStatusDropdownOpen(!isCallStatusDropdownOpen)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer whitespace-nowrap"
+              >
+                <span>Call: {callStatus}</span>
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+
+              {isCallStatusDropdownOpen && (
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="space-y-2">
+                    <div className="px-2 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Call Status</div>
+                    {['Not Attempted', 'Connected', 'RNR', 'Switch Off', 'Busy', 'Callback Scheduled', 'Not Interested', 'Invalid Number'].map(status => (
+                      <button
+                        key={status}
+                        onClick={() => {
+                          setCallStatus(status);
+                          setDraftLead(prev => ({
+                            ...prev,
+                            callingStatus: status as any,
+                            lastCallOutcome: status as any,
+                          }));
+                          setIsCallStatusDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-xs font-medium rounded-lg cursor-pointer transition-colors ${
+                          callStatus === status
+                            ? 'bg-blue-100 text-blue-700 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
-              {saveSuccessMessage && (
-                <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
-                  ✓ {saveSuccessMessage}
-                </span>
-              )}
-              <button
-                onClick={() => setIsAssignModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
-              >
-                <ArrowRightLeft className="w-3.5 h-3.5" />
-                <span>Assign</span>
-              </button>
-              <div className="relative">
-                <button
-                  onClick={() => setIsCallStatusDropdownOpen(!isCallStatusDropdownOpen)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer whitespace-nowrap"
-                >
-                  <span>Call Status</span>
-                  <ChevronDown className="w-3.5 h-3.5" />
-                </button>
-
-                {isCallStatusDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl z-50 p-3 animate-in fade-in zoom-in-95 duration-100">
-                    <div className="space-y-2">
-                      <div className="px-2 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Call Outcome</div>
-                      {['Connected', 'Callback Requested', 'RNR', 'Busy', 'Switch Off', 'Not Interested', 'Invalid Number', 'Other'].map(status => (
-                        <button
-                          key={status}
-                          onClick={() => {
-                            setDraftLead(prev => ({
-                              ...prev,
-                              callingStatus: status as any,
-                              lastCallOutcome: status as any,
-                            }));
-                            setIsCallStatusDropdownOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors"
-                        >
-                          {status}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => onInitiateCall(draftLead)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg cursor-pointer"
-              >
-                <Phone className="w-3.5 h-3.5 fill-white" />
-                <span>Call</span>
-              </button>
             </div>
+            <input
+              type="date"
+              value={nextCallDate}
+              onChange={(e) => {
+                setNextCallDate(e.target.value);
+                setDraftLead(prev => ({
+                  ...prev,
+                  nextCallAt: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                }));
+              }}
+              className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white hover:bg-slate-50 cursor-pointer"
+              title="Reschedule call date"
+            />
+            <button
+              onClick={() => setIsAddNotesModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Add Note</span>
+            </button>
+            <button
+              onClick={() => onInitiateCall(draftLead)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg cursor-pointer ml-auto"
+            >
+              <Phone className="w-3.5 h-3.5 fill-white" />
+              <span>Call</span>
+            </button>
           </div>
 
           {/* Student Basics Row */}
@@ -362,10 +387,11 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
       {/* ===== MAIN CONTENT LAYOUT ===== */}
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT SIDEBAR MENU */}
-        <div className="w-48 bg-white border-r border-slate-200 overflow-y-auto">
+        <div className="w-48 bg-white border-r border-slate-200 overflow-y-auto flex flex-col">
           <div className="p-3 space-y-1">
             {[
               { id: 'all-profile' as MenuSection, label: 'All Profile', icon: Users },
+              { id: 'notes' as MenuSection, label: 'Notes & Activity', icon: FileText },
               { id: 'academic' as MenuSection, label: 'Academic Profile', icon: BookOpen },
               { id: 'assignments' as MenuSection, label: 'Assignment Logs', icon: LogIn },
               { id: 'documents' as MenuSection, label: 'Documents', icon: FileText },
@@ -382,7 +408,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-[#D91C24] text-white shadow-xs'
+                      ? 'bg-[#2563EB] text-white shadow-xs'
                       : 'text-slate-700 hover:bg-slate-100'
                   }`}
                 >
@@ -515,36 +541,53 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Notes */}
-              <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
-                <h3 className="text-sm font-bold text-slate-900">Notes & Activity</h3>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
+          {currentSection === 'notes' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3 flex flex-col h-96">
+                <h3 className="text-sm font-bold text-slate-900 flex-shrink-0">Notes & Activity</h3>
+                
+                {/* Chat Messages Area */}
+                <div className="flex-1 overflow-y-auto space-y-2 mb-3 min-h-0">
+                  {draftLead.notes.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-slate-400 text-xs">
+                      No notes yet. Start adding notes below.
+                    </div>
+                  ) : (
+                    draftLead.notes.map((note, idx) => (
+                      <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs">
+                        <div className="text-blue-900 break-words">{note}</div>
+                        <div className="text-blue-600 text-[10px] mt-1.5">Virendra</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Input Area */}
+                <div className="flex gap-2 flex-shrink-0 border-t border-slate-200 pt-3">
+                  <textarea
                     value={newNoteText}
                     onChange={e => setNewNoteText(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleStageNote()}
-                    placeholder="Add a note..."
-                    className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-hidden focus:border-slate-400"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleStageNote();
+                      }
+                    }}
+                    placeholder="Add a note... (Enter to send, Shift+Enter for new line)"
+                    className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-hidden focus:border-slate-400 resize-none"
+                    rows={2}
                   />
                   <button
                     onClick={handleStageNote}
                     disabled={!newNoteText.trim()}
-                    className="px-3 py-1.5 text-xs font-semibold bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50 cursor-pointer"
+                    className="px-4 py-2 text-xs font-semibold bg-[#2563EB] text-white rounded-lg hover:bg-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex-shrink-0 h-fit"
                   >
-                    Add
+                    Send
                   </button>
                 </div>
-                {draftLead.notes.length > 0 && (
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                    {draftLead.notes.slice(0, 5).map((note, idx) => (
-                      <div key={idx} className="p-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-slate-800">
-                        {note}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -655,7 +698,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                         onClick={() => handleToggleProductOpportunity(prod)}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                           draftLead.masterProducts[prod]
-                            ? 'bg-[#D91C24] text-white'
+                            ? 'bg-[#2563EB] text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >
@@ -725,7 +768,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                           {opp.product === 'Education Loan' && onOpenEducationLoan && (
                             <button
                               onClick={() => onOpenEducationLoan(draftLead)}
-                              className="w-full mt-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] cursor-pointer"
+                              className="w-full mt-2 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] cursor-pointer"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               <span>Open Full Loan Profile</span>
@@ -871,7 +914,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
 
                     {/* Special Actions for Education Loan */}
                     {selectedProduct === 'Education Loan' && onOpenEducationLoan && (
-                      <div className="bg-gradient-to-r from-[#D91C24]/5 to-slate-50 rounded-xl border border-[#D91C24]/30 p-4 shadow-xs">
+                      <div className="bg-gradient-to-r from-[#2563EB]/5 to-slate-50 rounded-xl border border-[#2563EB]/30 p-4 shadow-xs">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="font-bold text-slate-900">Education Loan Full Profile</h3>
@@ -879,7 +922,7 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
                           </div>
                           <button
                             onClick={() => onOpenEducationLoan(draftLead)}
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] cursor-pointer whitespace-nowrap"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] cursor-pointer whitespace-nowrap"
                           >
                             <ExternalLink className="w-4 h-4" />
                             <span>Open Full Profile</span>
@@ -949,9 +992,59 @@ export const LeadDetailView: React.FC<LeadDetailViewProps> = ({
               </button>
               <button
                 onClick={handleConfirmAssignment}
-                className="px-4 py-1.5 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg cursor-pointer"
+                className="px-4 py-1.5 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg cursor-pointer"
               >
                 Assign
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Note Modal */}
+      {isAddNotesModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-xl border border-slate-200 overflow-hidden">
+            <div className="p-4 border-b border-slate-200">
+              <h3 className="text-sm font-bold text-slate-900">Add Note</h3>
+            </div>
+
+            <div className="p-4 space-y-3">
+              <textarea
+                autoFocus
+                value={newNoteText}
+                onChange={e => setNewNoteText(e.target.value)}
+                placeholder="Type your note here..."
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:bg-white focus:outline-none focus:border-slate-400 resize-none"
+                rows={4}
+              />
+            </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  setIsAddNotesModalOpen(false);
+                  setNewNoteText('');
+                }}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (newNoteText.trim()) {
+                    setDraftLead(prev => ({
+                      ...prev,
+                      notes: [newNoteText.trim(), ...prev.notes]
+                    }));
+                    setNewNoteText('');
+                    setIsAddNotesModalOpen(false);
+                  }
+                }}
+                disabled={!newNoteText.trim()}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg cursor-pointer transition-colors"
+              >
+                Add Note
               </button>
             </div>
           </div>

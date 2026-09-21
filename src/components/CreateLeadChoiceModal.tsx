@@ -21,7 +21,7 @@ export const CreateLeadChoiceModal: React.FC<CreateLeadChoiceModalProps> = ({
       <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#D91C24]/10 text-[#D91C24] flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-[#2563EB]/10 text-[#2563EB] flex items-center justify-center font-bold">
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
@@ -44,14 +44,14 @@ export const CreateLeadChoiceModal: React.FC<CreateLeadChoiceModalProps> = ({
               onClose();
               onSelectManual();
             }}
-            className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-[#D91C24] bg-white hover:bg-rose-50/30 transition-all group flex items-start justify-between gap-3 cursor-pointer shadow-xs hover:shadow-sm"
+            className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-[#2563EB] bg-white hover:bg-blue-50/30 transition-all group flex items-start justify-between gap-3 cursor-pointer shadow-xs hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[#D91C24] text-slate-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[#2563EB] text-slate-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                 <User className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-sm font-bold text-slate-900 block group-hover:text-[#D91C24] transition-colors">
+                <span className="text-sm font-bold text-slate-900 block group-hover:text-[#2563EB] transition-colors">
                   Manual Lead Entry
                 </span>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
@@ -59,7 +59,7 @@ export const CreateLeadChoiceModal: React.FC<CreateLeadChoiceModalProps> = ({
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#D91C24] mt-1 shrink-0 group-hover:translate-x-0.5 transition-all" />
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] mt-1 shrink-0 group-hover:translate-x-0.5 transition-all" />
           </button>
 
           {/* Option 2: Bulk CSV / Excel Upload */}
@@ -68,14 +68,14 @@ export const CreateLeadChoiceModal: React.FC<CreateLeadChoiceModalProps> = ({
               onClose();
               onSelectBulk();
             }}
-            className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-[#D91C24] bg-white hover:bg-rose-50/30 transition-all group flex items-start justify-between gap-3 cursor-pointer shadow-xs hover:shadow-sm"
+            className="w-full text-left p-4 rounded-xl border border-slate-200 hover:border-[#2563EB] bg-white hover:bg-blue-50/30 transition-all group flex items-start justify-between gap-3 cursor-pointer shadow-xs hover:shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[#D91C24] text-slate-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-slate-100 group-hover:bg-[#2563EB] text-slate-700 group-hover:text-white flex items-center justify-center shrink-0 transition-colors">
                 <FileSpreadsheet className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-sm font-bold text-slate-900 block group-hover:text-[#D91C24] transition-colors">
+                <span className="text-sm font-bold text-slate-900 block group-hover:text-[#2563EB] transition-colors">
                   Bulk Upload (CSV / Excel)
                 </span>
                 <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
@@ -83,7 +83,7 @@ export const CreateLeadChoiceModal: React.FC<CreateLeadChoiceModalProps> = ({
                 </p>
               </div>
             </div>
-            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#D91C24] mt-1 shrink-0 group-hover:translate-x-0.5 transition-all" />
+            <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#2563EB] mt-1 shrink-0 group-hover:translate-x-0.5 transition-all" />
           </button>
         </div>
 

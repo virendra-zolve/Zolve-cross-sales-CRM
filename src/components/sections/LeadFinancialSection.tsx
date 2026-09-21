@@ -38,7 +38,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
                 value={plan}
                 checked={lead.fundingPlan === plan}
                 onChange={e => onUpdate('fundingPlan', e.target.value as FundingPlan)}
-                className="w-4 h-4 text-[#D91C24] cursor-pointer"
+                className="w-4 h-4 text-[#2563EB] cursor-pointer"
               />
               <span className="text-sm font-medium text-slate-700">{plan}</span>
             </label>
@@ -55,7 +55,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
         <input
           type="number"
           placeholder="Enter amount (e.g., 3000000 for INR 30 lakhs)"
-          className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:bg-white focus:outline-none focus:border-[#D91C24]"
+          className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:bg-white focus:outline-none focus:border-[#2563EB]"
         />
         <p className="text-xs text-slate-500">Enter the estimated total funding requirement for the entire course</p>
       </div>
@@ -74,12 +74,12 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
               <input
                 type="text"
                 placeholder="e.g., Rajesh Sharma"
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB]"
               />
             </div>
             <div>
               <label className="text-[11px] text-slate-500 font-medium block mb-1">Relationship</label>
-              <select className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#D91C24]">
+              <select className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB]">
                 <option>Select relationship...</option>
                 <option>Father</option>
                 <option>Mother</option>
@@ -99,7 +99,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
               <input
                 type="tel"
                 placeholder="98765XXXXX"
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:outline-none focus:border-[#2563EB]"
               />
             </div>
             <div>
@@ -110,7 +110,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
               <input
                 type="email"
                 placeholder="email@example.com"
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB]"
               />
             </div>
           </div>
@@ -121,7 +121,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
               <input
                 type="text"
                 placeholder="e.g., Salaried / Business"
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB]"
               />
             </div>
             <div>
@@ -129,7 +129,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
               <input
                 type="text"
                 placeholder="Company or business name"
-                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-[#2563EB]"
               />
             </div>
           </div>
@@ -139,7 +139,7 @@ export const LeadFinancialSection: React.FC<LeadFinancialSectionProps> = ({
             <input
               type="number"
               placeholder="e.g., 1200000 for INR 12 lakhs"
-              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:outline-none focus:border-[#D91C24]"
+              className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm font-mono text-slate-900 focus:outline-none focus:border-[#2563EB]"
             />
           </div>
         </div>

@@ -31,7 +31,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-slate-200 p-6 text-center space-y-4">
-            <div className="w-12 h-12 rounded-full bg-rose-100 text-[#D91C24] mx-auto flex items-center justify-center font-bold text-xl">
+            <div className="w-12 h-12 rounded-full bg-blue-100 text-[#2563EB] mx-auto flex items-center justify-center font-bold text-xl">
               !
             </div>
             <h1 className="text-lg font-bold text-slate-900">
@@ -45,7 +45,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
                 this.setState({ hasError: false, error: null });
                 window.location.reload();
               }}
-              className="px-4 py-2 bg-[#D91C24] hover:bg-[#B30018] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[#2563EB] hover:bg-[#1E40AF] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
             >
               Reload Dashboard
             </button>

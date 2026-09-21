@@ -15,6 +15,7 @@ import { calculateLeadSlaInfo, SlaInfo } from '../utils/slaHelpers';
 import { calculateDashboardMetrics } from '../utils/metricsHelpers';
 import { LeadTable } from './LeadTable';
 import { AllLeadsView } from './AllLeadsView';
+import { ProductPerformancePage } from './ProductPerformancePage';
 import { generateMockAllLeads } from '../data/mockAllLeads';
 
 interface RmDashboardProps {
@@ -47,6 +48,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
 }) => {
   const [tableView, setTableView] = useState<'my-active' | 'needs-action' | 'claim-leads' | 'target'>('my-active');
   const [actionFilter, setActionFilter] = useState<'all' | 'breached' | 'callbacks' | 'pending'>('all');
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const mockAllLeads = useMemo(() => generateMockAllLeads(), []);
 
   // Calculate metrics once - single source of truth
@@ -94,8 +96,83 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
     { time: '09:55 AM', title: 'Lead stage → Application', studentName: 'Arjun Mehta', leadId: 'L000106', type: 'stage' },
   ];
 
+  // Calculate product performance
+  const productMetrics = useMemo(() => {
+    const products: Record<string, { count: number; sold: number; value: number }> = {
+      'Education Loan': { count: 0, sold: 0, value: 0 },
+      'Bank Account': { count: 0, sold: 0, value: 0 },
+      'Credit Card': { count: 0, sold: 0, value: 0 },
+      'Forex': { count: 0, sold: 0, value: 0 },
+    };
+
+    leads.forEach(lead => {
+      Object.entries(lead.masterProducts || {}).forEach(([product, active]) => {
+        if (active && products[product as keyof typeof products]) {
+          products[product as keyof typeof products].count++;
+          
+          const opp = lead.productOpportunities?.find(p => p.product === product);
+          if (opp?.status === 'Completed / Sold') {
+            products[product as keyof typeof products].sold++;
+            // Mock value for display
+            if (product === 'Education Loan') {
+              products[product as keyof typeof products].value += 50000;
+            } else if (product === 'Bank Account') {
+              products[product as keyof typeof products].value += 0;
+            } else if (product === 'Credit Card') {
+              products[product as keyof typeof products].value += 5000;
+            } else if (product === 'Forex') {
+              products[product as keyof typeof products].value += 10000;
+            }
+          }
+        }
+      });
+    });
+
+    return products;
+  }, [leads]);
+
   return (
-    <div className="space-y-6">
+    <>
+      {selectedProduct ? (
+        <ProductPerformancePage
+          product={selectedProduct}
+          leads={leads}
+          onBack={() => setSelectedProduct(null)}
+        />
+      ) : (
+        <div className="space-y-6">
+      {/* PRODUCT BUSINESS CARDS */}
+      <div>
+        <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wide">Product Performance</h3>
+        <div className="grid grid-cols-4 gap-3">
+          {Object.entries(productMetrics).map(([product, metrics]) => (
+            <div
+              key={product}
+              onClick={() => setSelectedProduct(product)}
+              className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
+            >
+              <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{product}</div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Opportunities</span>
+                  <span className="text-lg font-bold text-slate-900">{metrics.count}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Sold</span>
+                  <span className="text-lg font-bold text-emerald-600">{metrics.sold}</span>
+                </div>
+                {metrics.value > 0 && (
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                    <span className="text-xs text-slate-600">Business Value</span>
+                    <span className="text-sm font-bold text-slate-900">${(metrics.value / 1000).toFixed(0)}K</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* KPI CARDS */}
       <div className="grid grid-cols-4 gap-4">
         {/* Card 1: My Active Leads */}
@@ -220,7 +297,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
                 <div className="text-slate-800">
                   <span className="font-semibold text-slate-900">{act.title}</span>
                   <span> – </span>
-                  <span className="font-semibold text-[#D91C24] hover:underline cursor-pointer"
+                  <span className="font-semibold text-[#2563EB] hover:underline cursor-pointer"
                     onClick={() => {
                       const l = leads.find(lead => lead.id === act.leadId);
                       if (l) onSelectLead(l);
@@ -234,6 +311,8 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
           ))}
         </div>
       </section>
-    </div>
+        </div>
+      )}
+    </>
   );
 };

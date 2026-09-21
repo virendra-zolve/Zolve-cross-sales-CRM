@@ -359,7 +359,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     if (kpiStatus === 'Overdue') {
       return (
         <div className="flex flex-col">
-          <span className="text-xs font-semibold text-[#D91C24]">
+          <span className="text-xs font-semibold text-[#2563EB]">
             {overdueMinutes ? `${overdueMinutes}m overdue` : 'KPI Overdue'}
           </span>
           <span className="text-[11px] text-slate-400">
@@ -380,7 +380,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   const getCallingStatusDot = (status: CallingStatus) => {
     switch(status) {
       case 'Not Attempted':
-        return <span className="w-1.5 h-1.5 rounded-full bg-[#D91C24]" />;
+        return <span className="w-1.5 h-1.5 rounded-full bg-[#2563EB]" />;
       case 'Callback Scheduled':
         return <span className="w-1.5 h-1.5 rounded-full bg-[#FF5722]" />;
       case 'Connected':
@@ -423,7 +423,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               <span>{kpiFilterLabel}</span>
               <button 
                 onClick={onClearKpiFilter}
-                className="hover:text-[#D91C24] cursor-pointer"
+                className="hover:text-[#2563EB] cursor-pointer"
                 title="Clear filter"
               >
                 ✕
@@ -485,7 +485,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                         type="checkbox"
                         checked={col.visible}
                         onChange={() => handleToggleColumn(col.key)}
-                        className="w-3.5 h-3.5 text-[#D91C24] rounded border-slate-300 focus:ring-[#D91C24]"
+                        className="w-3.5 h-3.5 text-[#2563EB] rounded border-slate-300 focus:ring-[#2563EB]"
                       />
                       <span className={`text-xs ${col.visible ? 'text-slate-900 font-medium' : 'text-slate-400'}`}>
                         {col.label}
@@ -497,7 +497,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                 <div className="mt-2 pt-2 border-t border-slate-100">
                   <button
                     onClick={() => setIsColumnFilterOpen(false)}
-                    className="w-full px-2.5 py-1 text-xs font-semibold text-white bg-[#D91C24] rounded hover:bg-[#B30018] transition-colors cursor-pointer"
+                    className="w-full px-2.5 py-1 text-xs font-semibold text-white bg-[#2563EB] rounded hover:bg-[#1E40AF] transition-colors cursor-pointer"
                   >
                     Done
                   </button>
@@ -536,7 +536,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                           type="checkbox"
                           checked={selectedLeadIds.length > 0 && selectedLeadIds.length === filteredLeads.length}
                           onChange={handleSelectAll}
-                          className="w-4 h-4 text-[#D91C24] rounded border-slate-300 focus:ring-[#D91C24] cursor-pointer"
+                          className="w-4 h-4 text-[#2563EB] rounded border-slate-300 focus:ring-[#2563EB] cursor-pointer"
                         />
                       )}
                     </th>
@@ -654,7 +654,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                         if (col.key === 'businessName') {
                           return (
                             <td key={col.key} className="py-3 px-4">
-                              <div className="font-semibold text-slate-900 group-hover:text-[#D91C24] transition-colors">
+                              <div className="font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors">
                                 {partner.businessName}
                               </div>
                             </td>
@@ -742,7 +742,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                                 type="checkbox"
                                 checked={selectedLeadIds.includes(lead.id)}
                                 onChange={() => handleToggleRowSelection(lead.id)}
-                                className="w-4 h-4 text-[#D91C24] rounded border-slate-300 focus:ring-[#D91C24] cursor-pointer"
+                                className="w-4 h-4 text-[#2563EB] rounded border-slate-300 focus:ring-[#2563EB] cursor-pointer"
                               />
                             )}
                           </td>
@@ -762,7 +762,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       } else if (col.key === 'studentName') {
                         return (
                           <td key={col.key} className="py-3 px-4 cursor-pointer" onClick={() => onSelectLead(lead)}>
-                            <span className="font-semibold text-slate-900 group-hover:text-[#D91C24] transition-colors">
+                            <span className="font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors">
                               {lead.studentName}
                             </span>
                           </td>
@@ -853,8 +853,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                         {!showClaimButton && (
                           <button
                             id={`btn-call-${lead.id}`}
-                            onClick={() => onInitiateCall(lead)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] transition-colors cursor-pointer"
+                            onClick={() => onSelectLead(lead)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] transition-colors cursor-pointer"
                           >
                             <Phone className="w-3 h-3 fill-white" />
                             <span>Call</span>

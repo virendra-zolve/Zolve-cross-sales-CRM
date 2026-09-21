@@ -127,7 +127,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
         {/* Header */}
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-rose-50 text-[#D91C24] flex items-center justify-center font-bold border border-rose-100">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#2563EB] flex items-center justify-center font-bold border border-blue-100">
               <FileSpreadsheet className="w-4 h-4" />
             </div>
             <div>
@@ -240,7 +240,7 @@ export const BulkUploadModal: React.FC<BulkUploadModalProps> = ({
             id="btn-confirm-import-csv"
             onClick={handleConfirmImport}
             disabled={!fileUploaded || validRows.length === 0}
-            className="px-4 py-2 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] disabled:opacity-40 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] disabled:opacity-40 rounded-lg flex items-center gap-1.5 cursor-pointer transition-colors"
           >
             <span>Import ({validRows.length} Leads)</span>
             <ArrowRight className="w-3.5 h-3.5" />

@@ -107,7 +107,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs text-center">
-          <div className="text-lg font-bold text-[#D91C24]">{activeProducts.length}</div>
+          <div className="text-lg font-bold text-[#2563EB]">{activeProducts.length}</div>
           <div className="text-[10px] text-slate-500 font-semibold mt-1">Active Products</div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs text-center">
@@ -128,7 +128,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
       <div className="flex gap-2">
         <button
           onClick={() => setShowAddProducts(!showAddProducts)}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#D91C24] text-white rounded-lg text-xs font-bold hover:bg-[#B30018] cursor-pointer transition-colors shadow-xs"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-bold hover:bg-[#1E40AF] cursor-pointer transition-colors shadow-xs"
         >
           <Plus className="w-4 h-4" />
           Add Products
@@ -198,7 +198,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                       <select
                         value={product.status}
                         onChange={e => onProductStatusChange?.(product.product, e.target.value as ProductOpportunityStatus)}
-                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
                       >
                         {PRODUCT_STATUS_OPTIONS.map(status => (
                           <option key={status} value={status}>{status}</option>
@@ -211,7 +211,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                         <input
                           type="text"
                           placeholder={product.amount || 'e.g., $50,000'}
-                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
                           readOnly
                         />
                       </div>
@@ -225,7 +225,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                         <input
                           type="text"
                           value={product.partner}
-                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
                           readOnly
                         />
                       </div>
@@ -236,7 +236,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                         <input
                           type="text"
                           value={product.productOwner}
-                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
                           readOnly
                         />
                       </div>
@@ -248,7 +248,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                       <label className="text-[11px] text-slate-500 font-medium block mb-1">Details & Notes</label>
                       <textarea
                         value={product.details}
-                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#D91C24]"
+                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
                         rows={2}
                         readOnly
                       />
@@ -259,7 +259,7 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
                   {product.product === 'Education Loan' && (
                     <button
                       onClick={onOpenEducationLoan}
-                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#D91C24] to-red-700 text-white rounded-lg text-xs font-bold hover:shadow-md cursor-pointer transition-all"
+                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#2563EB] to-blue-600 text-white rounded-lg text-xs font-bold hover:shadow-md cursor-pointer transition-all"
                     >
                       <Zap className="w-4 h-4" />
                       Open Full Loan Profile

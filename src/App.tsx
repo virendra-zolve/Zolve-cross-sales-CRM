@@ -13,7 +13,7 @@ import { TeamMemberDetailView } from './components/TeamMemberDetailView';
 import { PartnerDetailView } from './components/PartnerDetailView';
 import { LeadDetailViewRefactored } from './components/LeadDetailViewRefactored';
 import { EducationLoanDetailView } from './components/EducationLoanDetailView';
-import { QuickCallModal } from './components/QuickCallModal';
+import { EducationLoanJourneyPage } from './components/EducationLoanJourneyPage';
 import { BulkUploadModal } from './components/BulkUploadModal';
 import { NewLeadModal } from './components/NewLeadModal';
 import { CreateLeadChoiceModal } from './components/CreateLeadChoiceModal';
@@ -335,8 +335,10 @@ export default function App() {
   const [partners, setPartners] = useState<Partner[]>(DUMMY_PENDING_PARTNERS);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(DUMMY_PENDING_TEAM_MEMBERS);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'head' | 'bde' | 'leads_list' | 'detail' | 'education_loan' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'head' | 'bde' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
   const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'head' | 'bde'>('dashboard' as any);
+  const [selectedEducationLoanApplicationId, setSelectedEducationLoanApplicationId] = useState<string | null>(null);
+  const [selectedLoanProductFlow, setSelectedLoanProductFlow] = useState<any>(null);
   const [selectedTeamMemberId, setSelectedTeamMemberId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<'agent' | 'team_lead' | 'head' | 'bde'>('team_lead');
@@ -482,6 +484,21 @@ export default function App() {
       setSelectedLeadId(loanLead.id);
     }
     setCurrentView('education_loan');
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch {}
+  };
+
+  const handleOpenEducationLoanJourney = (
+    lead: StudentLead,
+    opportunityId: string,
+    applicationId?: string,
+    loanProductFlow?: any
+  ) => {
+    setSelectedLeadId(lead.id);
+    setSelectedEducationLoanApplicationId(applicationId || null);
+    setSelectedLoanProductFlow(loanProductFlow);
+    setCurrentView('education_loan_journey');
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {}
@@ -785,7 +802,7 @@ export default function App() {
                   Lead Management — All Active Leads (128)
                 </span>
                 {kpiFilter !== 'all' && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-rose-50 text-[#D91C24] border border-rose-200 px-2 py-0.5 rounded-md">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-50 text-[#2563EB] border border-blue-200 px-2 py-0.5 rounded-md">
                     <Filter className="w-3 h-3" />
                     <span>Filtered by: {getKpiFilterLabel()}</span>
                     <button
@@ -801,7 +818,7 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsNewLeadOpen(true)}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg transition-colors cursor-pointer"
                 >
                   + Create Lead
                 </button>
@@ -933,6 +950,27 @@ export default function App() {
               <p className="text-sm text-slate-600">Partner not found</p>
             </div>
           )
+        ) : currentView === 'education_loan_journey' ? (
+          /* Dedicated Education Loan Journey - Multi-stage Application */
+          currentLead ? (
+            <EducationLoanJourneyPage
+              lead={currentLead}
+              opportunityId="opp_placeholder" // TODO: Pass actual opportunity ID
+              applicationId={selectedEducationLoanApplicationId || undefined}
+              loanProductFlow={selectedLoanProductFlow}
+              onBack={() => setCurrentView('detail')}
+            />
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-3">
+              <p className="text-sm font-semibold text-slate-700">No lead selected for Education Loan Journey</p>
+              <button
+                onClick={handleBackToDashboard}
+                className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-semibold cursor-pointer"
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          )
         ) : currentView === 'education_loan' ? (
           /* Dedicated Education Loan Processing & Underwriting View */
           currentLead ? (
@@ -947,7 +985,7 @@ export default function App() {
               <p className="text-sm font-semibold text-slate-700">No lead selected for Education Loan View</p>
               <button
                 onClick={handleBackToDashboard}
-                className="px-4 py-2 bg-[#D91C24] text-white rounded-lg text-xs font-semibold cursor-pointer"
+                className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-semibold cursor-pointer"
               >
                 Return to Dashboard
               </button>
@@ -965,18 +1003,6 @@ export default function App() {
           )
         )}
       </main>
-
-      {/* Quick Call Modal */}
-      <QuickCallModal
-        lead={activeCallingLead}
-        isOpen={isCallModalOpen}
-        isLiveCallMode={isLiveCallMode}
-        onClose={() => {
-          setIsCallModalOpen(false);
-          setActiveCallingLead(null);
-        }}
-        onSaveOutcome={handleSaveCallOutcome}
-      />
 
       {/* Create Lead Choice Modal (Popup to select Bulk or Manual) */}
       <CreateLeadChoiceModal

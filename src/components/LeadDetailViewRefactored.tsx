@@ -7,7 +7,6 @@ import { LeadFinancialSection } from './sections/LeadFinancialSection';
 import { LeadDocumentsSection } from './sections/LeadDocumentsSection';
 import { LeadCallingSection } from './sections/LeadCallingSection';
 import { LeadProductsSection } from './sections/LeadProductsSection';
-import { QuickCallModal } from './QuickCallModal';
 
 interface LeadDetailViewRefactoredProps {
   lead: StudentLead;
@@ -162,7 +161,7 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-md cursor-pointer"
+                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-md cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
                     Save
@@ -219,7 +218,7 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
               onClick={() => setCurrentSection(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 currentSection === item.id
-                  ? 'bg-[#D91C24] text-white shadow-md'
+                  ? 'bg-[#2563EB] text-white shadow-md'
                   : 'text-slate-700 hover:bg-slate-100'
               }`}
             >
@@ -286,88 +285,73 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
           )}
 
           {currentSection === 'notes' && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Activities & Call Logs</h2>
-              <div className="space-y-2">
-                {draftLead.activities && draftLead.activities.length > 0 ? (
-                  draftLead.activities.map((activity) => (
-                    <div key={activity.id} className="bg-white border border-slate-200 rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-1">
-                        <div>
-                          <p className="font-semibold text-slate-900 text-sm">{activity.title}</p>
-                          <p className="text-xs text-slate-600 mt-0.5">{activity.actor}</p>
-                        </div>
-                        <span className="text-xs text-slate-400 whitespace-nowrap ml-2">
-                          {new Date(activity.timestamp).toLocaleDateString()} {new Date(activity.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-700 mt-2">{activity.description}</p>
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col h-96">
+              <h2 className="text-lg font-bold text-slate-900 mb-4 flex-shrink-0">Notes & Comments</h2>
+              
+              {/* Chat Messages Area */}
+              <div className="flex-1 overflow-y-auto space-y-3 mb-4 min-h-0 pr-2">
+                {draftLead.notes.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-slate-400 text-xs">
+                    No notes yet. Start adding notes below.
+                  </div>
+                ) : (
+                  draftLead.notes.map((note, idx) => (
+                    <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="text-blue-900 break-words text-sm">{note}</div>
+                      <div className="text-blue-600 text-[10px] mt-2">Virendra • Just now</div>
                     </div>
                   ))
-                ) : (
-                  <div className="text-center py-6 text-slate-500">No activities yet</div>
                 )}
+              </div>
+
+              {/* Input Area */}
+              <div className="flex gap-2 flex-shrink-0 border-t border-slate-200 pt-3">
+                <textarea
+                  placeholder="Add a note... (Enter to send, Shift+Enter for new line)"
+                  className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:bg-white focus:outline-hidden focus:border-slate-400 resize-none"
+                  rows={2}
+                  onChange={(e) => {
+                    const notes = e.currentTarget.value;
+                    setDraftLead(prev => ({ ...prev, _newNote: notes }));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      const newNote = (e.currentTarget.value || '').trim();
+                      if (newNote) {
+                        setDraftLead(prev => ({
+                          ...prev,
+                          notes: [newNote, ...prev.notes],
+                          _newNote: ''
+                        }));
+                        e.currentTarget.value = '';
+                      }
+                    }
+                  }}
+                  value={(draftLead as any)._newNote || ''}
+                />
+                <button
+                  onClick={() => {
+                    const textarea = document.querySelector('[placeholder="Add a note..."]') as HTMLTextAreaElement;
+                    const newNote = (textarea?.value || '').trim();
+                    if (newNote) {
+                      setDraftLead(prev => ({
+                        ...prev,
+                        notes: [newNote, ...prev.notes],
+                        _newNote: ''
+                      }));
+                      if (textarea) textarea.value = '';
+                    }
+                  }}
+                  className="px-4 py-2 text-xs font-semibold bg-[#2563EB] text-white rounded-lg hover:bg-[#1E40AF] cursor-pointer flex-shrink-0 h-fit"
+                >
+                  Send
+                </button>
               </div>
             </div>
           )}
         </div>
       </div>
-
-      {/* Quick Call Modal */}
-      <QuickCallModal
-        lead={draftLead}
-        isOpen={isCallModalOpen}
-        isLiveCallMode={true}
-        onClose={() => {
-          setIsCallModalOpen(false);
-          // Refresh the lead to get updated data
-          onUpdateLead(draftLead);
-        }}
-        onSaveOutcome={(leadId, outcome, notes, nextCallIso, newStatus, durationSeconds) => {
-          // Apply the call outcome to the lead
-          const now = new Date().toISOString();
-          const updatedLead: StudentLead = {
-            ...draftLead,
-            callingStatus: outcome === 'Callback Requested' ? 'Callback Scheduled' : (outcome === 'Connected' ? 'Connected' : draftLead.callingStatus),
-            noOfAttempts: draftLead.noOfAttempts + 1,
-            lastCallAt: now,
-            lastCallOutcome: outcome as any,
-            nextCallAt: nextCallIso,
-            lastActionAt: now,
-            lastActionBy: 'Virendra',
-            leadStatus: newStatus,
-            kpiStatus: 'On Track' as any,
-            kpiOverdueMinutes: undefined,
-            callLogs: [
-              {
-                id: `c_${Date.now()}`,
-                timestamp: now,
-                rmName: 'Virendra (You)',
-                durationSeconds,
-                outcome,
-                notes,
-                scheduledNextCall: nextCallIso,
-              },
-              ...draftLead.callLogs,
-            ],
-            activities: [
-              {
-                id: `act_${Date.now()}`,
-                timestamp: now,
-                actor: 'Virendra (RM)',
-                type: 'call',
-                title: `Call Logged: ${outcome}`,
-                description: `Duration: ${durationSeconds}s. Notes: "${notes || 'None'}". Next call scheduled.`,
-              },
-              ...draftLead.activities,
-            ],
-            notes: notes ? [notes, ...draftLead.notes] : draftLead.notes,
-          };
-          setDraftLead(updatedLead);
-          onUpdateLead(updatedLead);
-          setIsCallModalOpen(false);
-        }}
-      />
     </div>
   );
 };

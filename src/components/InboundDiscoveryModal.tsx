@@ -311,7 +311,7 @@ export const InboundDiscoveryModal: React.FC<InboundDiscoveryModalProps> = ({
         <div className="p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white border-b border-slate-700">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#D91C24] flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center shadow-md">
                 <PhoneCall className="w-5 h-5 text-white animate-pulse" />
               </div>
               <div>
@@ -666,7 +666,7 @@ export const InboundDiscoveryModal: React.FC<InboundDiscoveryModalProps> = ({
             <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-full bg-[#D91C24] text-white flex items-center justify-center text-[10px]">3</span>
+                  <span className="w-5 h-5 rounded-full bg-[#2563EB] text-white flex items-center justify-center text-[10px]">3</span>
                   <span>Financial & Product Opportunities (Zolve Cross-Sell)</span>
                 </h3>
                 <span className="text-[11px] text-slate-500">Ask: "Will you require an education loan for tuition/living?"</span>
@@ -681,14 +681,14 @@ export const InboundDiscoveryModal: React.FC<InboundDiscoveryModalProps> = ({
                       id="needs-education-loan-chk"
                       checked={needsEducationLoan}
                       onChange={(e) => setNeedsEducationLoan(e.target.checked)}
-                      className="w-4 h-4 text-[#D91C24] rounded border-slate-300 focus:ring-rose-500"
+                      className="w-4 h-4 text-[#2563EB] rounded border-slate-300 focus:ring-blue-500"
                     />
                     <label htmlFor="needs-education-loan-chk" className="font-bold text-slate-900 text-xs cursor-pointer flex items-center gap-1">
-                      <GraduationCap className="w-4 h-4 text-[#D91C24]" />
+                      <GraduationCap className="w-4 h-4 text-[#2563EB]" />
                       <span>Student Requires Education Loan</span>
                     </label>
                   </div>
-                  <span className="text-[11px] font-bold text-[#D91C24] bg-white px-2 py-0.5 rounded border border-rose-200">
+                  <span className="text-[11px] font-bold text-[#2563EB] bg-white px-2 py-0.5 rounded border border-blue-200">
                     High Priority Deal
                   </span>
                 </div>
@@ -883,7 +883,7 @@ export const InboundDiscoveryModal: React.FC<InboundDiscoveryModalProps> = ({
             <button
               type="button"
               onClick={handleSaveAndEnrich}
-              className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg shadow-md transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg shadow-md transition-colors cursor-pointer"
               id="btn-confirm-save-discovery"
             >
               <Check className="w-4 h-4" />

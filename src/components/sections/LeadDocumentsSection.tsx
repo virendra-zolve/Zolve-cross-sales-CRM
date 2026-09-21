@@ -87,7 +87,7 @@ export const LeadDocumentsSection: React.FC<LeadDocumentsSectionProps> = ({
             <select
               value={selectedCategory}
               onChange={e => setSelectedCategory(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#D91C24]"
+              className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:border-[#2563EB]"
             >
               <option value="">Select category...</option>
               {DOCUMENT_CATEGORIES.map(cat => (
@@ -98,7 +98,7 @@ export const LeadDocumentsSection: React.FC<LeadDocumentsSectionProps> = ({
 
           <div className="col-span-2">
             <label className="text-[11px] text-slate-500 font-medium block mb-1">Select File</label>
-            <label className="flex items-center justify-center w-full p-2 border-2 border-dashed border-slate-300 rounded-lg hover:border-[#D91C24] cursor-pointer transition-colors bg-slate-50">
+            <label className="flex items-center justify-center w-full p-2 border-2 border-dashed border-slate-300 rounded-lg hover:border-[#2563EB] cursor-pointer transition-colors bg-slate-50">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4 text-slate-500" />
                 <span className="text-xs font-semibold text-slate-600">
@@ -128,7 +128,7 @@ export const LeadDocumentsSection: React.FC<LeadDocumentsSectionProps> = ({
             onClick={() => setSelectedFilter('all')}
             className={`px-2 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
               selectedFilter === 'all'
-                ? 'bg-[#D91C24] text-white'
+                ? 'bg-[#2563EB] text-white'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -140,7 +140,7 @@ export const LeadDocumentsSection: React.FC<LeadDocumentsSectionProps> = ({
               onClick={() => setSelectedFilter(cat)}
               className={`px-2 py-1 rounded-full text-xs font-semibold cursor-pointer transition-colors ${
                 selectedFilter === cat
-                  ? 'bg-[#D91C24] text-white'
+                  ? 'bg-[#2563EB] text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >

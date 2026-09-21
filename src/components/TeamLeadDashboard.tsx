@@ -4,6 +4,7 @@ import { StudentLead, TeamMember } from '../types';
 import { calculateDashboardMetrics } from '../utils/metricsHelpers';
 import { LeadTable } from './LeadTable';
 import { BulkAssignmentModal } from './BulkAssignmentModal';
+import { ProductPerformancePage } from './ProductPerformancePage';
 
 interface TeamLeadDashboardProps {
   leads: StudentLead[];
@@ -31,8 +32,43 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   const [activeKpiFilter, setActiveKpiFilter] = useState<'all' | 'unassigned' | 'qualified' | 'not_attempted' | 'kpi_breach'>('all');
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
   const metrics = calculateDashboardMetrics(leads);
+
+  const productMetrics = useMemo(() => {
+    const products: Record<string, { count: number; sold: number; value: number }> = {
+      'Education Loan': { count: 0, sold: 0, value: 0 },
+      'Bank Account': { count: 0, sold: 0, value: 0 },
+      'Credit Card': { count: 0, sold: 0, value: 0 },
+      'Forex': { count: 0, sold: 0, value: 0 },
+    };
+
+    leads.forEach(lead => {
+      Object.entries(lead.masterProducts || {}).forEach(([product, active]) => {
+        if (active && products[product as keyof typeof products]) {
+          products[product as keyof typeof products].count++;
+          
+          const opp = lead.productOpportunities?.find(p => p.product === product);
+          if (opp?.status === 'Completed / Sold') {
+            products[product as keyof typeof products].sold++;
+            // Mock value for display
+            if (product === 'Education Loan') {
+              products[product as keyof typeof products].value += 50000;
+            } else if (product === 'Bank Account') {
+              products[product as keyof typeof products].value += 0;
+            } else if (product === 'Credit Card') {
+              products[product as keyof typeof products].value += 5000;
+            } else if (product === 'Forex') {
+              products[product as keyof typeof products].value += 10000;
+            }
+          }
+        }
+      });
+    });
+
+    return products;
+  }, [leads]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -50,7 +86,47 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   }, [leads, activeKpiFilter]);
 
   return (
-    <div className="space-y-6">
+    <>
+      {selectedProduct ? (
+        <ProductPerformancePage
+          product={selectedProduct}
+          leads={leads}
+          onBack={() => setSelectedProduct(null)}
+        />
+      ) : (
+        <div className="space-y-6">
+      {/* PRODUCT BUSINESS CARDS */}
+      <div>
+        <h3 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wide">Team Product Performance</h3>
+        <div className="grid grid-cols-4 gap-3">
+          {Object.entries(productMetrics).map(([product, metrics]) => (
+            <div
+              key={product}
+              onClick={() => setSelectedProduct(product)}
+              className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs hover:shadow-md hover:border-slate-300 transition-all cursor-pointer"
+            >
+              <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{product}</div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Opportunities</span>
+                  <span className="text-lg font-bold text-slate-900">{metrics.count}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Sold</span>
+                  <span className="text-lg font-bold text-emerald-600">{metrics.sold}</span>
+                </div>
+                {metrics.value > 0 && (
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-100">
+                    <span className="text-xs text-slate-600">Business Value</span>
+                    <span className="text-sm font-bold text-slate-900">${(metrics.value / 1000).toFixed(0)}K</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Management Navigation */}
       <div className="flex items-center gap-3">
         <button
@@ -72,8 +148,6 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
           Partner Management
         </button>
       </div>
-
-      {/* KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Unassigned */}
         <button
@@ -137,9 +211,9 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-slate-500 uppercase">KPI Breach</span>
-            <AlertTriangle className="w-4 h-4 text-[#D91C24]" />
+            <AlertTriangle className="w-4 h-4 text-[#2563EB]" />
           </div>
-          <div className="text-3xl font-bold text-[#D91C24]">{metrics.slaBreached || 0}</div>
+          <div className="text-3xl font-bold text-[#2563EB]">{metrics.slaBreached || 0}</div>
           <p className="text-xs text-slate-600 mt-2">Immediate action needed</p>
         </button>
       </div>
@@ -173,6 +247,8 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
           setSelectedLeadIds([]);
         }}
       />
-    </div>
+        </div>
+      )}
+    </>
   );
 };

@@ -77,7 +77,7 @@ export const LeadCallingSection: React.FC<LeadCallingSectionProps> = ({
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs text-center">
-          <div className="text-lg font-bold text-[#D91C24]">{lead.noOfAttempts || 0}</div>
+          <div className="text-lg font-bold text-[#2563EB]">{lead.noOfAttempts || 0}</div>
           <div className="text-[10px] text-slate-500 font-semibold mt-1">Total Attempts</div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs text-center">
@@ -147,7 +147,7 @@ export const LeadCallingSection: React.FC<LeadCallingSectionProps> = ({
       <div className="flex gap-2">
         <button
           onClick={() => setShowLogCallModal(true)}
-          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#D91C24] text-white rounded-lg text-xs font-bold hover:bg-[#B30018] cursor-pointer transition-colors shadow-xs"
+          className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-bold hover:bg-[#1E40AF] cursor-pointer transition-colors shadow-xs"
         >
           <Phone className="w-4 h-4" />
           Log Call
@@ -190,7 +190,7 @@ export const LeadCallingSection: React.FC<LeadCallingSectionProps> = ({
                   Duration: {call.durationSeconds}s
                 </div>
                 {call.notes && (
-                  <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded mt-1 border-l-2 border-[#D91C24]">
+                  <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded mt-1 border-l-2 border-[#2563EB]">
                     <span className="font-semibold">Notes: </span>{call.notes}
                   </div>
                 )}
@@ -266,7 +266,7 @@ export const LeadCallingSection: React.FC<LeadCallingSectionProps> = ({
               </button>
               <button
                 onClick={handleLogCall}
-                className="flex-1 px-3 py-1.5 bg-[#D91C24] text-white rounded-lg text-xs font-semibold hover:bg-[#B30018] cursor-pointer"
+                className="flex-1 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#1E40AF] cursor-pointer"
               >
                 Save Call
               </button>
@@ -311,7 +311,7 @@ export const LeadCallingSection: React.FC<LeadCallingSectionProps> = ({
               </button>
               <button
                 onClick={handleScheduleCallback}
-                className="flex-1 px-3 py-1.5 bg-[#D91C24] text-white rounded-lg text-xs font-semibold hover:bg-[#B30018] cursor-pointer"
+                className="flex-1 px-3 py-1.5 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-[#1E40AF] cursor-pointer"
               >
                 Schedule
               </button>

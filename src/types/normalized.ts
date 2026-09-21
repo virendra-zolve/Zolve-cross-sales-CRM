@@ -1,7 +1,7 @@
 // Lead Management System - Normalized Database Schema Types
 // Based on LMS Restructuring Specification
 
-import { JourneyStage, MasterProduct, ProductOpportunityStatus, QualificationStatus, FundingPlan, ClosureReason, LastCallOutcome } from './index';
+import { JourneyStage, MasterProduct, ProductOpportunityStatus, QualificationStatus, FundingPlan, ClosureReason, LastCallOutcome } from '../types';
 
 // ============================================================================
 // ENUMS & CONSTANTS
@@ -407,6 +407,9 @@ export interface LeadDocument {
   documentType: DocumentCategory;
   documentSubcategory?: string;
   
+  documentCategory?: DocumentCategoryExtended; // 'general' | 'educationLoan' | 'personalLoan'
+  educationLoanApplicationId?: string; // Optional link to specific education loan app
+  
   filePath: string; // Reference to file storage
   
   uploadedBy: string; // User ID
@@ -602,4 +605,225 @@ export interface ReconstructedStudentLead {
     description: string;
   }>;
   notes: string[];
+}
+
+// ============================================================================
+// EDUCATION LOAN JOURNEY TYPES
+// ============================================================================
+
+export enum LoanProductFlow {
+  INR_Unsecured = 'INR_Unsecured',
+  INR_Secured = 'INR_Secured',
+  US_Cosigner = 'US_Cosigner',
+  USD_NoCoSigner_Prodigy = 'USD_NoCoSigner_Prodigy',
+  USD_NoCoSigner_MPower = 'USD_NoCoSigner_MPower',
+}
+
+export enum ApplicationStatus {
+  Draft = 'Draft',
+  InProgress = 'In Progress',
+  Submitted = 'Submitted',
+  UnderReview = 'Under Review',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Closed = 'Closed',
+}
+
+export enum DocumentCategoryExtended {
+  General = 'general',
+  EducationLoan = 'educationLoan',
+  PersonalLoan = 'personalLoan',
+}
+
+export interface ApplicantProfile {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  mobileCountryCode: string;
+  dateOfBirth: string; // ISO date
+  gender?: 'Male' | 'Female' | 'Other';
+  nationality: string;
+  currentAddress: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  maritalStatus?: 'Single' | 'Married' | 'Divorced' | 'Widowed';
+  pan?: string; // India
+  taxId?: string; // US
+}
+
+export interface ResidenceDestinationInfo {
+  currentCountryOfResidence: string;
+  currentVisaStatus?: string;
+  plannedDestinationCountry: string;
+  visaStatusInDestination?: string;
+  expectedVisaApplicationDate?: string;
+}
+
+export interface EducationDetails {
+  degreeType: 'UG' | 'PG' | 'Certificate' | 'Other';
+  fieldOfStudy: string;
+  intakeType: 'Fall' | 'Spring' | 'Summer' | 'Other';
+  intakeYear: number;
+  universitiesOfInterest: string[];
+  admissionStatus: 'Not Applied' | 'Applied' | 'Admitted' | 'Deferred' | 'Rejected';
+  expectedAdmissionDecisionDate?: string;
+}
+
+export interface LoanApplicationDetails {
+  loanType: 'Secured' | 'Unsecured';
+  requestedLoanAmount: number;
+  loanAmountCurrency: 'INR' | 'USD';
+  purposeOfLoan: string[];
+  repaymentPreference?: 'SimpleInterest' | 'PartialSI' | 'FullEMI';
+}
+
+export interface CoApplicantDetails {
+  fullName: string;
+  relationship: 'Parent' | 'Spouse' | 'Sibling' | 'Other';
+  phoneNumber: string;
+  email: string;
+  profession: string;
+  employer: string;
+  annualIncome: number;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  sameAsApplicant: boolean;
+  consentGiven: boolean;
+}
+
+export interface ReferenceDetail {
+  name: string;
+  relationship: 'Academic' | 'Professional' | 'Personal';
+  phoneNumber: string;
+  email: string;
+}
+
+export interface AcademicHistory {
+  tenthGrade?: {
+    board: string;
+    school: string;
+    year: number;
+    marksPercentage: number;
+  };
+  twelfthGrade?: {
+    board: string;
+    school: string;
+    stream: string;
+    year: number;
+    marksPercentage: number;
+  };
+  underGraduate?: {
+    college: string;
+    degree: string;
+    major: string;
+    gpa: number;
+    startYear: number;
+    endYear: number;
+    backlogs: number;
+  };
+  postGraduate?: {
+    college: string;
+    degree: string;
+    major: string;
+    gpa: number;
+    startYear: number;
+    endYear: number;
+  };
+  workExperience?: Array<{
+    company: string;
+    role: string;
+    yearsWorked: number;
+  }>;
+  englishTestScores?: Array<{
+    testName: 'IELTS' | 'TOEFL' | 'PTE';
+    score: number;
+    testDate: string;
+  }>;
+  aptitudeTestScores?: Array<{
+    testName: 'GRE' | 'GMAT';
+    score: number;
+    testDate: string;
+  }>;
+}
+
+export interface FinancialDetails {
+  applicantAnnualGrossIncome: number;
+  applicantMonthlyIncome: number;
+  applicantSavingsAccountBalance: number;
+  applicantInvestments: number;
+  applicantLiabilities: number;
+  applicantCreditScore?: number;
+  
+  coApplicantAnnualIncome?: number;
+  coApplicantMonthlyIncome?: number;
+  coApplicantSavingsAccountBalance?: number;
+  
+  familyAnnualIncome: number;
+  debtToIncomeRatio: number;
+  bankStatementProofProvided: boolean;
+}
+
+export interface CollateralDetails {
+  collateralType: 'Property' | 'Vehicle' | 'Gold' | 'Other';
+  estimatedValue: number;
+  location: string;
+  existingLiensOrMortgages: string;
+}
+
+export interface StageCompletionStatus {
+  [stageName: string]: {
+    completed: boolean;
+    completedAt?: string;
+    validationErrors: string[];
+  };
+}
+
+export interface EducationLoanApplication {
+  applicationId: string; // UUID primary key
+  leadId: string; // Foreign key to LeadMaster
+  opportunityId: string; // Foreign key to LeadProductOpportunity
+  
+  loanProductFlow: LoanProductFlow;
+  selectedLoanProvider?: string;
+  
+  currentStage: string;
+  stageCompletionStatus: StageCompletionStatus;
+  
+  applicationStatus: ApplicationStatus;
+  
+  // Application data (all stages combined)
+  applicantProfile?: ApplicantProfile;
+  residenceDestinationInfo?: ResidenceDestinationInfo;
+  educationDetails?: EducationDetails;
+  loanApplicationDetails?: LoanApplicationDetails;
+  coApplicantDetails?: CoApplicantDetails;
+  references?: ReferenceDetail[]; // Minimum 2 required
+  academicHistory?: AcademicHistory;
+  financialDetails?: FinancialDetails;
+  collateralDetails?: CollateralDetails;
+  
+  // Metadata
+  createdAt: string;
+  updatedAt: string;
+  draftSavedAt?: string;
+  submittedAt?: string;
+  
+  // For audit
+  lastModifiedBy?: string;
+  lastModifiedAt?: string;
+}
+
+// Extend LeadDocument to include education loan category
+export interface LeadDocumentExtended extends LeadDocument {
+  documentCategory?: DocumentCategoryExtended; // Add category field
+  educationLoanApplicationId?: string; // Optional link to specific app
 }

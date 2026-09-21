@@ -92,5 +92,5 @@ export const LEAD_STATUSES: LeadStatus[] = [
 ];
 
 // UI Related Constants
-export const ZOLVE_RED = '#D91C24';
-export const ZOLVE_RED_DARK = '#B30018';
+export const ZOLVE_RED = '#2563EB';
+export const ZOLVE_RED_DARK = '#1E40AF';

@@ -179,7 +179,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
       >
         <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[#D91C24] text-white flex items-center justify-center font-bold">
+            <div className="w-8 h-8 rounded-lg bg-[#2563EB] text-white flex items-center justify-center font-bold">
               <UserPlus className="w-4 h-4" />
             </div>
             <div>
@@ -211,27 +211,27 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
             </label>
             <div className="grid grid-cols-2 gap-2">
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs ${
-                assignmentChoice === 'self' ? 'bg-rose-50/70 border-[#D91C24] text-[#D91C24] font-semibold' : 'bg-white border-slate-200 text-slate-700'
+                assignmentChoice === 'self' ? 'bg-blue-50/70 border-[#2563EB] text-[#2563EB] font-semibold' : 'bg-white border-slate-200 text-slate-700'
               }`}>
                 <input
                   type="radio"
                   name="assignment"
                   checked={assignmentChoice === 'self'}
                   onChange={() => setAssignmentChoice('self')}
-                  className="accent-[#D91C24]"
+                  className="accent-[#2563EB]"
                 />
                 <span>Assign to Self</span>
               </label>
 
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer text-xs ${
-                assignmentChoice === 'unassigned' ? 'bg-rose-50/70 border-[#D91C24] text-[#D91C24] font-semibold' : 'bg-white border-slate-200 text-slate-700'
+                assignmentChoice === 'unassigned' ? 'bg-blue-50/70 border-[#2563EB] text-[#2563EB] font-semibold' : 'bg-white border-slate-200 text-slate-700'
               }`}>
                 <input
                   type="radio"
                   name="assignment"
                   checked={assignmentChoice === 'unassigned'}
                   onChange={() => setAssignmentChoice('unassigned')}
-                  className="accent-[#D91C24]"
+                  className="accent-[#2563EB]"
                 />
                 <span>Unassigned</span>
               </label>
@@ -324,7 +324,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
                       type="checkbox"
                       checked={countriesOfInterest.includes(country)}
                       onChange={() => toggleCountry(country)}
-                      className="accent-[#D91C24]"
+                      className="accent-[#2563EB]"
                     />
                     <span className="text-slate-700">{country}</span>
                   </label>
@@ -347,7 +347,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
                       type="checkbox"
                       checked={universitiesOfInterest.includes(uni)}
                       onChange={() => toggleUniversity(uni)}
-                      className="accent-[#D91C24] mt-0.5"
+                      className="accent-[#2563EB] mt-0.5"
                     />
                     <span className="text-slate-700 break-words">{uni}</span>
                   </label>
@@ -403,7 +403,7 @@ export const NewLeadModal: React.FC<NewLeadModalProps> = ({
             <button
               type="submit"
               id="submit-new-lead-btn"
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#D91C24] hover:bg-[#B30018] rounded-lg cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-lg cursor-pointer"
             >
               Create Lead
             </button>
