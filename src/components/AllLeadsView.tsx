@@ -60,6 +60,12 @@ export const AllLeadsView: React.FC<AllLeadsViewProps> = ({
     }));
   };
 
+  // Handle inline lead updates (status, journey stage, calling status)
+  const handleUpdateLead = (updatedLead: StudentLead) => {
+    console.log('Lead updated:', updatedLead);
+    // Parent component should handle the actual state update
+  };
+
   return (
     <div className="space-y-6">
       {/* Lead Table */}
@@ -68,6 +74,7 @@ export const AllLeadsView: React.FC<AllLeadsViewProps> = ({
         onSelectLead={onSelectLead}
         onInitiateCall={onInitiateCall}
         onQuickLogOutcome={onQuickLogOutcome}
+        onUpdateLead={handleUpdateLead}
         enableColumnFilter={false}
         showClaimButton={true}
         onClaimLead={handleClaimLead}

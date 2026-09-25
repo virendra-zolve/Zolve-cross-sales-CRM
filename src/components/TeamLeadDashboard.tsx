@@ -34,6 +34,12 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
 
+  // Handle inline lead updates (status, journey stage, calling status)
+  const handleUpdateLead = (updatedLead: StudentLead) => {
+    console.log('Lead updated:', updatedLead);
+    // Parent component should handle the actual state update
+  };
+
   const metrics = calculateDashboardMetrics(leads);
 
   const productMetrics = useMemo(() => {
@@ -224,6 +230,7 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
         onSelectLead={onSelectLead}
         onInitiateCall={onInitiateCall}
         onQuickLogOutcome={onQuickLogOutcome}
+        onUpdateLead={handleUpdateLead}
         kpiFilterLabel={activeKpiFilter !== 'all' ? `Filter: ${activeKpiFilter.replace('_', ' ').toUpperCase()}` : undefined}
         onClearKpiFilter={() => setActiveKpiFilter('all')}
         selectedLeadIds={selectedLeadIds}

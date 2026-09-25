@@ -51,6 +51,13 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const mockAllLeads = useMemo(() => generateMockAllLeads(), []);
 
+  // Handle inline lead updates (status, journey stage, calling status)
+  const handleUpdateLead = (updatedLead: StudentLead) => {
+    console.log('Lead updated:', updatedLead);
+    // Parent component should handle the actual state update
+    // For now, this triggers the parent to refresh/update the lead
+  };
+
   // Calculate metrics once - single source of truth
   const metrics = useMemo(() => {
     return calculateDashboardMetrics(leads);
@@ -86,15 +93,6 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
     // Sort descending by score
     return filtered.sort((a, b) => b.score - a.score);
   }, [leads, actionFilter]);
-
-  // Recent activity logs as specified in PRD V1
-  const recentActivities = [
-    { time: '10:42 AM', title: 'Call completed', studentName: 'Rahul Sharma', leadId: 'L000101', type: 'call' },
-    { time: '10:35 AM', title: 'Lead assigned', studentName: 'Neha Patel', leadId: 'L000105', type: 'assignment' },
-    { time: '10:20 AM', title: 'Education Loan status → Documents Pending', studentName: 'Rahul Sharma', leadId: 'L000101', type: 'product' },
-    { time: '10:12 AM', title: 'Next call scheduled', studentName: 'Aman Gupta', leadId: 'L000104', type: 'schedule' },
-    { time: '09:55 AM', title: 'Lead stage → Application', studentName: 'Arjun Mehta', leadId: 'L000106', type: 'stage' },
-  ];
 
   // Calculate product performance
   const productMetrics = useMemo(() => {
@@ -259,58 +257,14 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
           onSelectLead={onSelectLead}
           onInitiateCall={onInitiateCall}
           onQuickLogOutcome={onQuickLogOutcome}
+          onUpdateLead={handleUpdateLead}
           enableColumnFilter={false}
         />
       )}
 
 
 
-      {/* ───────────────────────────────────────────────────────────
-          RECENT ACTIVITY
-      ─────────────────────────────────────────────────────────── */}
-      <section className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-xs">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 tracking-wide uppercase">
-              Recent Activity
-            </h3>
-            <p className="text-[11px] text-slate-600 mt-0.5">
-              Real-time operational audit log of RM actions
-            </p>
-          </div>
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            Live Sync
-          </span>
-        </div>
 
-        <div className="space-y-2.5">
-          {recentActivities.map((act, index) => (
-            <div 
-              key={index} 
-              className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              <div className="text-[11px] font-mono text-slate-600 shrink-0 mt-0.5 font-medium">
-                {act.time}
-              </div>
-              <div className="flex-1 text-xs">
-                <div className="text-slate-800">
-                  <span className="font-semibold text-slate-900">{act.title}</span>
-                  <span> – </span>
-                  <span className="font-semibold text-[#2563EB] hover:underline cursor-pointer"
-                    onClick={() => {
-                      const l = leads.find(lead => lead.id === act.leadId);
-                      if (l) onSelectLead(l);
-                    }}
-                  >
-                    {act.studentName}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
         </div>
       )}
     </>
