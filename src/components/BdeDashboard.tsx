@@ -28,12 +28,6 @@ export const BdeDashboard: React.FC<BdeDashboardProps> = ({
 }) => {
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'pending'>('all');
 
-  // Handle inline lead updates (status, journey stage, calling status)
-  const handleUpdateLead = (updatedLead: StudentLead) => {
-    console.log('Lead updated:', updatedLead);
-    // Parent component should handle the actual state update
-  };
-
   // BDE metrics
   const metrics = useMemo(() => {
     const activePartners = partners.filter(p => p.status === 'Active').length;
@@ -172,8 +166,6 @@ export const BdeDashboard: React.FC<BdeDashboardProps> = ({
           partners={filteredPartners}
           onSelectPartner={(partner) => onViewPartnerDetails?.(partner.id)}
           onSelectLead={() => {}}
-          onInitiateCall={() => {}}
-          onQuickLogOutcome={() => {}}
           enableColumnFilter={false}
         />
       </section>
@@ -192,10 +184,7 @@ export const BdeDashboard: React.FC<BdeDashboardProps> = ({
         <LeadTable
           leads={partnerLeads.slice(0, 8)}
           onSelectLead={onSelectLead}
-          onUpdateLead={handleUpdateLead}
           enableColumnFilter={false}
-          onInitiateCall={() => {}}
-          onQuickLogOutcome={() => {}}
         />
       </section>
     </div>

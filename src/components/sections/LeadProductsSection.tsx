@@ -165,119 +165,135 @@ export const LeadProductsSection: React.FC<LeadProductsSectionProps> = ({
             <p className="text-xs text-slate-400 mt-1">Click "Add Products" to identify opportunities</p>
           </div>
         ) : (
-          activeProducts.map((product: ProductOpportunity) => (
-            <div
-              key={product.id}
-              className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow"
-            >
-              {/* Product Header */}
-              <button
-                onClick={() => setExpandedProduct(expandedProduct === product.product ? null : product.product)}
-                className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+          activeProducts.map((product: ProductOpportunity) => {
+            // Special handling for Education Loan - simplified card with direct navigation
+            if (product.product === 'Education Loan') {
+              return (
+                <button
+                  key={product.id}
+                  onClick={onOpenEducationLoan}
+                  className="w-full bg-gradient-to-br from-blue-50 to-slate-50 rounded-xl border border-blue-200 p-4 shadow-xs hover:shadow-md hover:border-blue-300 cursor-pointer transition-all text-left"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">📚</span>
+                      <div>
+                        <div className="text-sm font-bold text-slate-900">Education Loan</div>
+                        <div className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusColor(product.status)}`}>
+                          {product.status === 'Completed / Sold' ? '✓ Sold' :
+                           product.status === 'In Progress' ? '⚡ Active' :
+                           product.status === 'Interested' ? '🆕 New' : product.status}
+                        </div>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold block mb-1">Amount</label>
+                      <div className="text-sm font-bold text-slate-900">{product.amount || '—'}</div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-500 font-semibold block mb-1">Stage</label>
+                      <div className="text-sm font-bold text-blue-600">View Journey →</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            }
+
+            // Standard product card with expandable details
+            return (
+              <div
+                key={product.id}
+                className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-shadow"
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl">{getProductIcon(product.product)}</span>
-                  <div className="text-left">
-                    <div className="text-sm font-bold text-slate-900">{product.product}</div>
-                    <div className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusColor(product.status)}`}>
-                      {product.status === 'Completed / Sold' ? '✓ Sold' :
-                       product.status === 'In Progress' ? '⚡ Active' :
-                       product.status === 'Interested' ? '🆕 New' : product.status}
+                {/* Product Header */}
+                <button
+                  onClick={() => setExpandedProduct(expandedProduct === product.product ? null : product.product)}
+                  className="w-full px-4 py-3 flex items-center justify-between bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{getProductIcon(product.product)}</span>
+                    <div className="text-left">
+                      <div className="text-sm font-bold text-slate-900">{product.product}</div>
+                      <div className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusColor(product.status)}`}>
+                        {product.status === 'Completed / Sold' ? '✓ Sold' :
+                         product.status === 'In Progress' ? '⚡ Active' :
+                         product.status === 'Interested' ? '🆕 New' : product.status}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <span className="text-slate-400">{expandedProduct === product.product ? '−' : '+'}</span>
-              </button>
+                  <span className="text-slate-400">{expandedProduct === product.product ? '−' : '+'}</span>
+                </button>
 
-              {/* Expanded Product Details */}
-              {expandedProduct === product.product && (
-                <div className="px-4 py-3 border-t border-slate-200 space-y-3 bg-slate-50">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] text-slate-500 font-medium block mb-1">Status</label>
-                      <select
-                        value={product.status}
-                        onChange={e => onProductStatusChange?.(product.product, e.target.value as ProductOpportunityStatus)}
-                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                      >
-                        {PRODUCT_STATUS_OPTIONS.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {product.product === 'Education Loan' && (
+                {/* Expanded Product Details */}
+                {expandedProduct === product.product && (
+                  <div className="px-4 py-3 border-t border-slate-200 space-y-3 bg-slate-50">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] text-slate-500 font-medium block mb-1">Amount</label>
-                        <input
-                          type="text"
-                          placeholder={product.amount || 'e.g., $50,000'}
+                        <label className="text-[11px] text-slate-500 font-medium block mb-1">Status</label>
+                        <select
+                          value={product.status}
+                          onChange={e => onProductStatusChange?.(product.product, e.target.value as ProductOpportunityStatus)}
                           className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
+                        >
+                          {PRODUCT_STATUS_OPTIONS.map(status => (
+                            <option key={status} value={status}>{status}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {product.partner && (
+                        <div>
+                          <label className="text-[11px] text-slate-500 font-medium block mb-1">Partner</label>
+                          <input
+                            type="text"
+                            value={product.partner}
+                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
+                            readOnly
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {product.productOwner && (
+                        <div>
+                          <label className="text-[11px] text-slate-500 font-medium block mb-1">Product Owner</label>
+                          <input
+                            type="text"
+                            value={product.productOwner}
+                            className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
+                            readOnly
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {product.details && (
+                      <div>
+                        <label className="text-[11px] text-slate-500 font-medium block mb-1">Details & Notes</label>
+                        <textarea
+                          value={product.details}
+                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
+                          rows={2}
                           readOnly
                         />
                       </div>
                     )}
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {product.partner && (
-                      <div>
-                        <label className="text-[11px] text-slate-500 font-medium block mb-1">Partner</label>
-                        <input
-                          type="text"
-                          value={product.partner}
-                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                          readOnly
-                        />
-                      </div>
-                    )}
-                    {product.productOwner && (
-                      <div>
-                        <label className="text-[11px] text-slate-500 font-medium block mb-1">Product Owner</label>
-                        <input
-                          type="text"
-                          value={product.productOwner}
-                          className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                          readOnly
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {product.details && (
-                    <div>
-                      <label className="text-[11px] text-slate-500 font-medium block mb-1">Details & Notes</label>
-                      <textarea
-                        value={product.details}
-                        className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#2563EB]"
-                        rows={2}
-                        readOnly
-                      />
-                    </div>
-                  )}
-
-                  {/* Education Loan Special Section */}
-                  {product.product === 'Education Loan' && (
+                    {/* Remove Product */}
                     <button
-                      onClick={onOpenEducationLoan}
-                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-[#2563EB] to-blue-600 text-white rounded-lg text-xs font-bold hover:shadow-md cursor-pointer transition-all"
+                      onClick={() => onProductToggle?.(product.product, false)}
+                      className="w-full px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 cursor-pointer transition-colors"
                     >
-                      <Zap className="w-4 h-4" />
-                      Open Full Loan Profile
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      Remove Product
                     </button>
-                  )}
-
-                  {/* Remove Product */}
-                  <button
-                    onClick={() => onProductToggle?.(product.product, false)}
-                    className="w-full px-3 py-1.5 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-semibold hover:bg-red-100 cursor-pointer transition-colors"
-                  >
-                    Remove Product
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
+                  </div>
+                )}
+              </div>
+            );
+          })
         )}
       </div>
 

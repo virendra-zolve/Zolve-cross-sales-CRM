@@ -13,14 +13,17 @@ The Education Loan Journey feature provides a comprehensive, dedicated applicati
 
 - A full-screen dedicated application interface (not modal)
 - Multi-stage application flows supporting 4 distinct product types
+- **7-stage loan progression:** STARTED → DOCS_PENDING → DOCS_RECEIVED → CALL_SCHEDULED → SANCTIONED → DISBURSED → LOST
+- **Multi-lender coordination:** Track multiple lenders per loan with match scores (0-100) and sanction details
+- **Auto-stage transitions:** Automatically advance stages based on document approvals and lender approval events
 - Bi-directional data synchronization with lead profiles
-- Document management with categorization
+- Document management with categorization and required document tracking
 - Support for draft applications with auto-save capability
 - Immutable audit trails for compliance
 - Provider selection based on applicant profile
 - Stage-specific validation and progression
 
-The journey is product-specific and entry point-based: RMs access the journey from LeadProductOpportunity cards in the lead detail view, creating a seamless workflow from lead management to loan application.
+The journey is product-specific and entry point-based: RMs access the journey from LeadProductOpportunity cards in the lead detail view, creating a seamless workflow from lead management to loan application. The 7-stage model provides clear progression tracking and enables lender coordination across multiple financing options.
 
 ---
 

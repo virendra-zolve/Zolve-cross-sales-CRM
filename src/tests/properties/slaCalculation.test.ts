@@ -158,24 +158,24 @@ describe('Property: SLA 48-Hour Calculation Accuracy', () => {
     expect(slaStatus.slaDueAt).toBeDefined();
   });
 
-  test('Property 6: Hot priority leads have stricter SLA enforcement', () => {
+  test('Property 6: High priority leads have stricter SLA enforcement', () => {
     const lead = db.createLead({
-      studentName: 'Hot Priority Test',
+      studentName: 'High Priority Test',
       mobileNumber: '9876543305',
       mobileCountryCode: '91',
-      email: 'hot@example.com',
+      email: 'high@example.com',
       sourceCode: 'TEST',
     });
 
-    // Set lead priority to Hot
+    // Set lead priority to High
     const priority = db.setLeadPriority(lead.leadId, {
-      priorityLevel: 'Hot',
+      priorityLevel: 'High',
       reason: 'High conversion potential',
       setBy: 'Manager',
     });
 
     expect(priority).toBeTruthy();
-    expect(priority?.priorityLevel).toBe('Hot');
+    expect(priority?.priorityLevel).toBe('High');
 
     // Check SLA status
     const slaStatus = db.getSlaStatus(lead.leadId);

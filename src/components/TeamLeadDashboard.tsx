@@ -10,8 +10,6 @@ interface TeamLeadDashboardProps {
   leads: StudentLead[];
   teamMembers?: TeamMember[];
   onSelectLead: (lead: StudentLead) => void;
-  onInitiateCall: (lead: StudentLead) => void;
-  onQuickLogOutcome: (lead: StudentLead) => void;
   onBulkAssignLeads?: (leads: StudentLead[], assignment: { agentId?: string }) => void;
   onViewTeamManagement?: () => void;
   onViewPartnerManagement?: () => void;
@@ -22,8 +20,6 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   leads,
   teamMembers = [],
   onSelectLead,
-  onInitiateCall,
-  onQuickLogOutcome,
   onBulkAssignLeads,
   onViewTeamManagement,
   onViewPartnerManagement,
@@ -33,12 +29,6 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
   const [selectedLeadIds, setSelectedLeadIds] = useState<string[]>([]);
   const [isBulkAssignOpen, setIsBulkAssignOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
-
-  // Handle inline lead updates (status, journey stage, calling status)
-  const handleUpdateLead = (updatedLead: StudentLead) => {
-    console.log('Lead updated:', updatedLead);
-    // Parent component should handle the actual state update
-  };
 
   const metrics = calculateDashboardMetrics(leads);
 
@@ -228,9 +218,6 @@ export const TeamLeadDashboard: React.FC<TeamLeadDashboardProps> = ({
       <LeadTable
         leads={filteredLeads}
         onSelectLead={onSelectLead}
-        onInitiateCall={onInitiateCall}
-        onQuickLogOutcome={onQuickLogOutcome}
-        onUpdateLead={handleUpdateLead}
         kpiFilterLabel={activeKpiFilter !== 'all' ? `Filter: ${activeKpiFilter.replace('_', ' ').toUpperCase()}` : undefined}
         onClearKpiFilter={() => setActiveKpiFilter('all')}
         selectedLeadIds={selectedLeadIds}

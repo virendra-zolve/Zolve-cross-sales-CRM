@@ -5,10 +5,27 @@ import {
   LoanProductFlow,
   ApplicationStatus,
   StageCompletionStatus,
+  LoanStage,
+  LenderStatus,
+  LenderApplicationProgress,
 } from '../types/normalized';
+import {
+  isValidStageTransition,
+  isValidLenderTransition,
+  STAGE_DISPLAY_INFO,
+} from '../utils/loanProgressionHelpers';
 import JourneyPageHeader from './JourneyPageHeader';
 import StageNavigationSidebar from './StageNavigationSidebar';
 import StageRouter from './stages/StageRouter';
+import StageProgressionTimeline from './StageProgressionTimeline';
+import LenderManagementPanel from './LenderManagementPanel';
+
+type LoanStageHistoryEntry = {
+  from: LoanStage;
+  to: LoanStage;
+  timestamp: string;
+  reason?: string;
+};
 
 // Get stages based on loan product flow
 const getStages = (flow: LoanProductFlow): string[] => {
@@ -131,6 +148,16 @@ const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> = ({
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastInteractionRef = useRef<number>(Date.now());
+
+  // Journey flow: 7-stage loan progression
+  const [loanStage, setLoanStage] = useState<LoanStage>(LoanStage.STARTED);
+  const [stageHistory, setStageHistory] = useState<LoanStageHistoryEntry[]>([]);
+
+  // Journey flow: multi-lender coordination
+  const [lenders, setLenders] = useState<LenderApplicationProgress[]>([]);
+
+  // UI toggles for journey flow panels
+  const [showJourneyPanel, setShowJourneyPanel] = useState(true);
 
   // ============================================================================
   // AUTO-SAVE & INACTIVITY LOGIC
@@ -317,6 +344,131 @@ const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> = ({
   }, [lead.studentName]);
 
   // ============================================================================
+  // JOURNEY FLOW HANDLERS: 7-Stage Progression
+  // ============================================================================
+
+  /**
+   * Advance loan stage (with transition validation and history tracking)
+   */
+  const handleAdvanceLoanStage = useCallback(
+    (toStage: LoanStage, reason?: string) => {
+      if (!isValidStageTransition(loanStage, toStage)) {
+        setError(
+          `Invalid transition from ${STAGE_DISPLAY_INFO[loanStage].label} to ${STAGE_DISPLAY_INFO[toStage].label}`
+        );
+        return;
+      }
+
+      const entry: LoanStageHistoryEntry = {
+        from: loanStage,
+        to: toStage,
+        timestamp: new Date().toISOString(),
+        reason,
+      };
+
+      setStageHistory(prev => [...prev, entry]);
+      setLoanStage(toStage);
+      lastInteractionRef.current = Date.now();
+
+      // TODO: Persist via LeadsDatabase.updateEducationLoanApplication + create
+      // LeadActivity record with activityType='LoanStageChange'.
+    },
+    [loanStage]
+  );
+
+  /**
+   * Auto-transition helpers wired to document workflow events.
+   * Exported on the component instance so document handlers can call them:
+   *   - 'requested': moves STARTED -> DOCS_PENDING
+   *   - 'all_approved': moves DOCS_PENDING -> DOCS_RECEIVED
+   * Not yet wired into document uploads; kept here so upload/approval flows
+   * added in later tasks can drop-in a call without extra plumbing.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const autoAdvanceOnDocumentEvent = useCallback(
+    (event: 'requested' | 'all_approved') => {
+      if (event === 'requested' && loanStage === LoanStage.STARTED) {
+        handleAdvanceLoanStage(LoanStage.DOCS_PENDING, 'Documents requested');
+      } else if (event === 'all_approved' && loanStage === LoanStage.DOCS_PENDING) {
+        handleAdvanceLoanStage(LoanStage.DOCS_RECEIVED, 'All required documents approved');
+      }
+    },
+    [loanStage, handleAdvanceLoanStage]
+  );
+
+  // ============================================================================
+  // JOURNEY FLOW HANDLERS: Multi-Lender Coordination
+  // ============================================================================
+
+  const handleAddLender = useCallback((lender: LenderApplicationProgress) => {
+    setLenders(prev => [...prev, lender]);
+    // TODO: Persist via LeadsDatabase and create LeadActivity record.
+  }, []);
+
+  const handleRemoveLender = useCallback((lenderId: string) => {
+    setLenders(prev => prev.filter(l => l.lenderId !== lenderId));
+    // TODO: Persist via LeadsDatabase and create LeadActivity record.
+  }, []);
+
+  const handleUpdateLenderStatus = useCallback(
+    (lenderId: string, newStatus: LenderStatus, details?: any) => {
+      setLenders(prev =>
+        prev.map(l => {
+          if (l.lenderId !== lenderId) return l;
+          if (!isValidLenderTransition(l.lenderStatus, newStatus)) {
+            setError(`Invalid lender status transition`);
+            return l;
+          }
+
+          const now = new Date().toISOString();
+          const historyEntry = {
+            from: l.lenderStatus,
+            to: newStatus,
+            timestamp: now,
+            details,
+          };
+
+          const updated: LenderApplicationProgress = {
+            ...l,
+            lenderStatus: newStatus,
+            statusHistory: [...l.statusHistory, historyEntry],
+            updatedAt: now,
+          };
+
+          if (newStatus === LenderStatus.APPROVED && details) {
+            updated.sanctionDetails = {
+              sanctionAmount: details.sanctionAmount,
+              roi: details.roi,
+              processingFee: details.processingFee,
+              sanctionDate: now,
+              sanctionValidity: details.sanctionValidity,
+            };
+          } else if (newStatus === LenderStatus.REJECTED && details?.rejectionReason) {
+            updated.rejectionReason = details.rejectionReason;
+          } else if (newStatus === LenderStatus.DISBURSED && details) {
+            updated.disbursementDetails = {
+              disbursementAmount: details.disbursementAmount,
+              disbursementDate: details.disbursementDate,
+            };
+          }
+
+          return updated;
+        })
+      );
+
+      // Auto-transition loan stage when a lender is approved -> SANCTIONED
+      if (newStatus === LenderStatus.APPROVED && loanStage === LoanStage.CALL_SCHEDULED) {
+        handleAdvanceLoanStage(LoanStage.SANCTIONED, 'Lender approved sanction');
+      }
+      // Auto-transition loan stage when a lender disburses -> DISBURSED
+      if (newStatus === LenderStatus.DISBURSED && loanStage === LoanStage.SANCTIONED) {
+        handleAdvanceLoanStage(LoanStage.DISBURSED, 'Lender disbursed funds');
+      }
+    },
+    [loanStage, handleAdvanceLoanStage]
+  );
+
+  // ============================================================================
   // RENDER
   // ============================================================================
 
@@ -363,6 +515,42 @@ const EducationLoanJourneyPage: React.FC<EducationLoanJourneyPageProps> = ({
         onBack={onBack}
         onCall={handleCall}
       />
+
+      {/* JOURNEY FLOW PANELS: Stage progression + Lender coordination */}
+      <div className="max-w-7xl mx-auto w-full px-4 pt-4 sm:px-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Journey Overview
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Loan progression and lender coordination
+            </p>
+          </div>
+          <button
+            onClick={() => setShowJourneyPanel(v => !v)}
+            className="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            {showJourneyPanel ? 'Hide' : 'Show'}
+          </button>
+        </div>
+        {showJourneyPanel && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <StageProgressionTimeline
+              currentStage={loanStage}
+              stageHistory={stageHistory}
+              onAdvanceStage={handleAdvanceLoanStage}
+            />
+            <LenderManagementPanel
+              loanId={applicationId || opportunityId}
+              lenders={lenders}
+              onAddLender={handleAddLender}
+              onUpdateStatus={handleUpdateLenderStatus}
+              onRemoveLender={handleRemoveLender}
+            />
+          </div>
+        )}
+      </div>
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex gap-4 max-w-7xl mx-auto w-full px-4 py-4 sm:px-6">

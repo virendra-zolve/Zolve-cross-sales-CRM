@@ -17,6 +17,12 @@ Transform the lead management system from a monolithic `StudentLead` type into a
 - Responsive layouts ready
 - Just need to connect to API
 
+✅ **Inline Table Editing**
+- Double-click to edit Lead Status, Journey Stage, Calling Status
+- Dropdown selection with visual feedback
+- Proper type-safe callbacks to parent component
+- All column filters updated
+
 ⚠️ **50% UI Integration**
 - Components created but not consuming API
 - Need new wrapper component
@@ -155,6 +161,36 @@ npm run test -- --ui
 ```
 
 ## Code Examples
+
+### Example: Inline Table Editing
+The LeadTable component now supports double-click editing for quick updates:
+
+```typescript
+// In your dashboard component
+<LeadTable
+  leads={leads}
+  onUpdateLead={async (lead) => {
+    // Handle update - typically call API
+    const updated = await leadsApi.updateLead(lead);
+    // Refresh leads list
+    setLeads(leads.map(l => l.id === updated.id ? updated : l));
+  }}
+  // ... other props
+/>
+```
+
+**How to use:**
+1. Double-click on any editable cell (Status, Stage, Calling Status)
+2. Select new value from dropdown
+3. Click outside or blur to save
+4. `onUpdateLead` callback fires with updated lead
+
+**Editable columns:**
+- Lead Status: Active, Closed, Archived
+- Journey Stage: Counseling, Application, Admission, Visa, Pre-Departure, Travel
+- Calling Status: Not Attempted, Callback Scheduled, Connected, RNR
+
+See `.kiro/INLINE_EDITING_IMPLEMENTATION.md` for full details.
 
 ### Example: Log a call and check SLA
 ```typescript

@@ -60,7 +60,7 @@ const calculateSlaStatus = (claimedAtMinutesAgo: number | null, lastCallAtMinute
 export const generateMockAllLeads = (): StudentLead[] => {
   const countries = ['USA', 'UK', 'Canada', 'Australia', 'Germany', 'Ireland', 'New Zealand', 'Singapore'];
   const products: MasterProduct[] = ['Education Loan', 'Test Prep', 'Admissions', 'eSIM', 'Travel / Flights'];
-  const priorities = ['Hot', 'Warm', 'Cold'];
+  const priorities = ['High', 'Medium', 'Low'];
   const firstNames = ['Rahul', 'Neha', 'Aman', 'Priya', 'Arjun', 'Ananya', 'Rohan', 'Deepak', 'Ishita', 'Vikram', 'Sara', 'Amit', 'Sneha', 'Nikhil', 'Pooja', 'Aditya', 'Zara', 'Karan'];
   const lastNames = ['Sharma', 'Patel', 'Gupta', 'Singh', 'Verma', 'Joshi', 'Nair', 'Desai', 'Kapoor', 'Khanna', 'Reddy', 'Mishra', 'Bhat', 'Rao', 'Malhotra'];
 

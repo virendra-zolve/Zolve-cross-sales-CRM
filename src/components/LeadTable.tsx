@@ -1,20 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Phone, 
   ChevronRight, 
-  Clock, 
   ArrowUpDown, 
-  CheckCircle2, 
-  SlidersHorizontal,
-  Plus,
   Columns,
   X,
   Users,
   Check,
-  ChevronDown,
 } from 'lucide-react';
-import { StudentLead, JourneyStage, KPIStatus, CallingStatus, Partner } from '../types';
-import { isLeadOverdue } from '../utils/slaHelpers';
+import { StudentLead, KPIStatus, CallingStatus, Partner } from '../types';
 
 interface ColumnConfig {
   key: string;
@@ -26,8 +19,11 @@ interface ColumnConfig {
 interface LeadTableProps {
   leads?: StudentLead[];
   onSelectLead: (lead: StudentLead) => void;
-  onInitiateCall: (lead: StudentLead) => void;
-  onQuickLogOutcome: (lead: StudentLead) => void;
+  // Deprecated props kept as optional for backwards compatibility with callers;
+  // they are no longer used by the table (inline Call/Log/edit removed).
+  onInitiateCall?: (lead: StudentLead) => void;
+  onQuickLogOutcome?: (lead: StudentLead) => void;
+  onUpdateLead?: (lead: StudentLead) => void;
   kpiFilterLabel?: string;
   onClearKpiFilter?: () => void;
   enableColumnFilter?: boolean;
@@ -39,17 +35,13 @@ interface LeadTableProps {
   onBulkAssign?: (selectedIds: string[]) => void;
   showClaimButton?: boolean;
   onClaimLead?: (lead: StudentLead) => void;
-  onUpdateLead?: (lead: StudentLead) => void;
 }
 
 export const LeadTable: React.FC<LeadTableProps> = ({
   leads = [],
   onSelectLead,
-  onInitiateCall,
-  onQuickLogOutcome,
   kpiFilterLabel,
   onClearKpiFilter,
-  enableColumnFilter = false,
   mode = 'lead',
   partners = [],
   onSelectPartner,
@@ -58,14 +50,12 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onBulkAssign,
   showClaimButton = false,
   onClaimLead,
-  onUpdateLead,
 }) => {
   const [sortBy, setSortBy] = useState<'nextCall' | 'name'>('nextCall');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isColumnFilterOpen, setIsColumnFilterOpen] = useState(false);
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
   const [tableSearch, setTableSearch] = useState('');
-  const [editingCell, setEditingCell] = useState<{ leadId: string; field: string } | null>(null);
   
   // Comprehensive column configuration with 60+ fields
   const defaultLeadColumns: ColumnConfig[] = [
@@ -108,7 +98,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     { key: 'leadAssignedBy', label: 'Lead Assigned By', visible: false, category: 'ownership' },
 
     // Qualification
-    { key: 'qualificationStatus', label: 'Qualification Status', visible: false, category: 'qualification' },
+    { key: 'qualificationStatus', label: 'Qualification Status', visible: true, category: 'qualification' },
     { key: 'qualifiedBy', label: 'Qualified By', visible: false, category: 'qualification' },
     { key: 'qualificationCompletedAt', label: 'Qualification Completed At', visible: false, category: 'qualification' },
     { key: 'qualificationNotes', label: 'Qualification Notes', visible: false, category: 'qualification' },
@@ -254,6 +244,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
       if (columnFilters['callingStatus'] && lead.callingStatus !== columnFilters['callingStatus']) {
         return false;
       }
+      if (columnFilters['qualificationStatus'] && lead.qualificationStatus !== columnFilters['qualificationStatus']) {
+        return false;
+      }
       if (columnFilters['claimStatus'] && (lead.claimStatus || 'Not Claimed') !== columnFilters['claimStatus']) {
         return false;
       }
@@ -303,23 +296,6 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   };
 
   const visibleColumns = columns.filter(c => c.visible);
-
-  const handleInlineEdit = (leadId: string, field: string, value: string) => {
-    if (onUpdateLead) {
-      const updatedLead = { ...leads.find(l => l.id === leadId) } as StudentLead;
-      if (field === 'leadStatus') {
-        updatedLead.leadStatus = value as any;
-      } else if (field === 'journeyStage') {
-        updatedLead.journeyStage = value as JourneyStage;
-      } else if (field === 'priority') {
-        // Priority is calculated, not directly set, so we'd need additional logic
-      } else if (field === 'callingStatus') {
-        updatedLead.callingStatus = value as CallingStatus;
-      }
-      onUpdateLead(updatedLead);
-    }
-    setEditingCell(null);
-  };
 
   const renderAdditionalColumnData = (lead: StudentLead, columnKey: string) => {
     switch(columnKey) {
@@ -377,6 +353,38 @@ export const LeadTable: React.FC<LeadTableProps> = ({
         return (
           <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md border ${leadStatusClass}`}>
             {lead.leadStatus}
+          </span>
+        );
+      case 'qualificationStatus': {
+        const qs = lead.qualificationStatus;
+        const label = qs === 'Pending' ? 'Yet to be Qualified' : qs;
+        const qClass =
+          qs === 'Qualified'
+            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+            : qs === 'Not Qualified'
+            ? 'bg-rose-50 text-rose-800 border-rose-200'
+            : 'bg-amber-50 text-amber-800 border-amber-200';
+        return (
+          <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md border ${qClass}`}>
+            {label}
+          </span>
+        );
+      }
+      case 'qualifiedBy':
+        return <span className="text-slate-700">{lead.qualifiedBy || '—'}</span>;
+      case 'qualificationCompletedAt':
+        return (
+          <span className="text-slate-700">
+            {lead.qualificationCompletedAt
+              ? new Date(lead.qualificationCompletedAt).toLocaleString('en-US', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  hour12: true,
+                })
+              : '—'}
           </span>
         );
       default:
@@ -594,6 +602,8 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       return ['Overdue', 'On Track'];
                     case 'leadStatus':
                       return ['Active', 'Closed', 'Archived'];
+                    case 'qualificationStatus':
+                      return ['Pending', 'Qualified', 'Not Qualified', 'Not Required'];
                     case 'callingStatus':
                       return ['Not Attempted', 'Callback Scheduled', 'Connected', 'RNR'];
                     case 'products':
@@ -613,7 +623,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   }
                 };
 
-                const isFilterable = ['priority', 'journeyStage', 'kpiStatus', 'leadStatus', 'products', 'callingStatus', 'claimStatus', 'destinationCountry', 'course', 'lastCallOutcome', 'noOfAttempts', 'id', 'studentName'].includes(col.key);
+                const isFilterable = ['priority', 'journeyStage', 'kpiStatus', 'leadStatus', 'qualificationStatus', 'products', 'callingStatus', 'claimStatus', 'destinationCountry', 'course', 'lastCallOutcome', 'noOfAttempts', 'id', 'studentName'].includes(col.key);
                 const filterOptions = getFilterOptions();
                 const isTextFilter = ['id', 'studentName'].includes(col.key);
                 
@@ -809,86 +819,38 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                           </td>
                         );
                       } else if (col.key === 'journeyStage') {
-                        const isEditing = editingCell?.leadId === lead.id && editingCell?.field === 'journeyStage';
                         return (
-                          <td 
-                            key={col.key} 
-                            className="py-3 px-4"
-                            onClick={(e) => {
-                              if (!isEditing) {
-                                setEditingCell({ leadId: lead.id, field: 'journeyStage' });
-                                e.stopPropagation();
-                              }
-                            }}
+                          <td
+                            key={col.key}
+                            className="py-3 px-4 cursor-pointer"
+                            onClick={() => onSelectLead(lead)}
                           >
-                            {isEditing ? (
-                              <select
-                                value={lead.journeyStage}
-                                onChange={(e) => handleInlineEdit(lead.id, 'journeyStage', e.target.value)}
-                                onBlur={() => setEditingCell(null)}
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full px-2 py-1 text-xs border-2 border-[#2563EB] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                              >
-                                <option value="Counseling">Counseling</option>
-                                <option value="Application">Application</option>
-                                <option value="Admission Confirmed">Admission Confirmed</option>
-                                <option value="Visa">Visa</option>
-                                <option value="Pre-Departure">Pre-Departure</option>
-                                <option value="Travel">Travel</option>
-                              </select>
-                            ) : (
-                              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 cursor-pointer hover:bg-slate-200 transition-colors">
-                                <span>{lead.journeyStage}</span>
-                                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
-                              </div>
-                            )}
+                            <div className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                              <span>{lead.journeyStage}</span>
+                            </div>
                           </td>
                         );
                       } else if (col.key === 'callingStatus') {
-                        const isEditing = editingCell?.leadId === lead.id && editingCell?.field === 'callingStatus';
                         return (
-                          <td 
-                            key={col.key} 
-                            className="py-3 px-4"
-                            onClick={(e) => {
-                              if (!isEditing) {
-                                setEditingCell({ leadId: lead.id, field: 'callingStatus' });
-                                e.stopPropagation();
-                              }
-                            }}
+                          <td
+                            key={col.key}
+                            className="py-3 px-4 cursor-pointer"
+                            onClick={() => onSelectLead(lead)}
                           >
-                            {isEditing ? (
-                              <select
-                                value={lead.callingStatus}
-                                onChange={(e) => handleInlineEdit(lead.id, 'callingStatus', e.target.value)}
-                                onBlur={() => setEditingCell(null)}
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full px-2 py-1 text-xs border-2 border-[#2563EB] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                              >
-                                <option value="Not Attempted">Not Attempted</option>
-                                <option value="Callback Scheduled">Callback Scheduled</option>
-                                <option value="Connected">Connected</option>
-                                <option value="RNR">RNR</option>
-                              </select>
-                            ) : (
-                              <div
-                                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border cursor-pointer transition-colors hover:opacity-80 ${
-                                  lead.callingStatus === 'Callback Scheduled'
-                                    ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                    : lead.callingStatus === 'Connected'
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                    : lead.callingStatus === 'RNR'
-                                    ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                    : 'bg-slate-100 text-slate-700 border-slate-200'
-                                }`}
-                              >
-                                {getCallingStatusDot(lead.callingStatus)}
-                                <span>{lead.callingStatus}</span>
-                                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
-                              </div>
-                            )}
+                            <div
+                              className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md border ${
+                                lead.callingStatus === 'Callback Scheduled'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : lead.callingStatus === 'Connected'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : lead.callingStatus === 'RNR'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200'
+                              }`}
+                            >
+                              {getCallingStatusDot(lead.callingStatus)}
+                              <span>{lead.callingStatus}</span>
+                            </div>
                           </td>
                         );
                       } else if (col.key === 'nextCall') {
@@ -924,45 +886,23 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                           </td>
                         );
                       } else if (col.key === 'leadStatus') {
-                        const isEditing = editingCell?.leadId === lead.id && editingCell?.field === 'leadStatus';
                         return (
-                          <td 
-                            key={col.key} 
-                            className="py-3 px-4"
-                            onClick={(e) => {
-                              if (!isEditing) {
-                                setEditingCell({ leadId: lead.id, field: 'leadStatus' });
-                                e.stopPropagation();
-                              }
-                            }}
+                          <td
+                            key={col.key}
+                            className="py-3 px-4 cursor-pointer"
+                            onClick={() => onSelectLead(lead)}
                           >
-                            {isEditing ? (
-                              <select
-                                value={lead.leadStatus}
-                                onChange={(e) => handleInlineEdit(lead.id, 'leadStatus', e.target.value)}
-                                onBlur={() => setEditingCell(null)}
-                                autoFocus
-                                onClick={(e) => e.stopPropagation()}
-                                className="w-full px-2 py-1 text-xs border-2 border-[#2563EB] rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-                              >
-                                <option value="Active">Active</option>
-                                <option value="Closed">Closed</option>
-                                <option value="Archived">Archived</option>
-                              </select>
-                            ) : (
-                              <div
-                                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border cursor-pointer transition-colors hover:opacity-80 ${
-                                  lead.leadStatus === 'Active'
-                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                    : (lead.leadStatus === 'Closed'
-                                    ? 'bg-rose-50 text-rose-800 border-rose-200'
-                                    : 'bg-slate-100 text-slate-700 border-slate-200')
-                                }`}
-                              >
-                                <span>{lead.leadStatus}</span>
-                                <ChevronDown className="w-3.5 h-3.5 flex-shrink-0" />
-                              </div>
-                            )}
+                            <div
+                              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
+                                lead.leadStatus === 'Active'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : (lead.leadStatus === 'Closed'
+                                  ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200')
+                              }`}
+                            >
+                              <span>{lead.leadStatus}</span>
+                            </div>
                           </td>
                         );
                       } else {
@@ -987,29 +927,6 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                           >
                             <Check className="w-3 h-3" />
                             <span>Claim</span>
-                          </button>
-                        )}
-
-                        {/* Call button: Solid Zolve Red */}
-                        {!showClaimButton && (
-                          <button
-                            id={`btn-call-${lead.id}`}
-                            onClick={() => onSelectLead(lead)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] transition-colors cursor-pointer"
-                          >
-                            <Phone className="w-3 h-3 fill-white" />
-                            <span>Call</span>
-                          </button>
-                        )}
-
-                        {/* Quick Outcome button */}
-                        {!showClaimButton && (
-                          <button
-                            id={`btn-quick-log-${lead.id}`}
-                            onClick={() => onQuickLogOutcome(lead)}
-                            className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
-                          >
-                            Log
                           </button>
                         )}
 

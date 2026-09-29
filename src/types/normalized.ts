@@ -47,9 +47,9 @@ export enum NotQualifiedReason {
 }
 
 export enum LeadPriority {
-  Hot = 'Hot',
-  Warm = 'Warm',
-  Cold = 'Cold',
+  High = 'High',
+  Medium = 'Medium',
+  Low = 'Low',
 }
 
 export enum DocumentCategory {
@@ -619,6 +619,26 @@ export enum LoanProductFlow {
   USD_NoCoSigner_MPower = 'USD_NoCoSigner_MPower',
 }
 
+export enum LoanStage {
+  STARTED = 'STARTED',
+  DOCS_PENDING = 'DOCS_PENDING',
+  DOCS_RECEIVED = 'DOCS_RECEIVED',
+  CALL_SCHEDULED = 'CALL_SCHEDULED',
+  SANCTIONED = 'SANCTIONED',
+  DISBURSED = 'DISBURSED',
+  LOST = 'LOST',
+}
+
+export enum LenderStatus {
+  INTERESTED = 'INTERESTED',
+  APPLIED = 'APPLIED',
+  UNDER_REVIEW = 'UNDER_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  DISBURSED = 'DISBURSED',
+  WITHDRAWN = 'WITHDRAWN',
+}
+
 export enum ApplicationStatus {
   Draft = 'Draft',
   InProgress = 'In Progress',
@@ -800,6 +820,15 @@ export interface EducationLoanApplication {
   
   applicationStatus: ApplicationStatus;
   
+  // Loan progression (7-stage model)
+  loanStage: LoanStage;
+  stageHistory: Array<{
+    from: LoanStage;
+    to: LoanStage;
+    timestamp: string;
+    reason?: string;
+  }>;
+  
   // Application data (all stages combined)
   applicantProfile?: ApplicantProfile;
   residenceDestinationInfo?: ResidenceDestinationInfo;
@@ -820,6 +849,41 @@ export interface EducationLoanApplication {
   // For audit
   lastModifiedBy?: string;
   lastModifiedAt?: string;
+}
+
+// Lender Application Progress Tracking
+export interface LenderApplicationProgress {
+  lenderId: string;
+  loanId: string;
+  lenderName: string;
+  lenderStatus: LenderStatus;
+  matchScore: number; // 0-100
+  recommendationSource?: 'AUTO_RECOMMENDED' | 'MANUAL';
+  
+  sanctionDetails?: {
+    sanctionAmount: number;
+    roi: number;
+    processingFee: number;
+    sanctionDate: string;
+    sanctionValidity: string;
+  };
+  
+  disbursementDetails?: {
+    disbursementAmount: number;
+    disbursementDate: string;
+    tranchCount?: number;
+  };
+  
+  rejectionReason?: string;
+  statusHistory: Array<{
+    from: LenderStatus;
+    to: LenderStatus;
+    timestamp: string;
+    details?: any;
+  }>;
+  
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Extend LeadDocument to include education loan category

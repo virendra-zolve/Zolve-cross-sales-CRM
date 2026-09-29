@@ -21,8 +21,6 @@ import { generateMockAllLeads } from '../data/mockAllLeads';
 interface RmDashboardProps {
   leads: StudentLead[];
   onSelectLead: (lead: StudentLead) => void;
-  onInitiateCall: (lead: StudentLead) => void;
-  onQuickLogOutcome: (lead: StudentLead) => void;
   onOpenNewLead: () => void;
   onOpenBulkUpload: () => void;
   onViewAllLeads: (filter?: string) => void;
@@ -38,8 +36,6 @@ export const getLeadSlaInfo = (lead: StudentLead): SlaInfo => {
 export const RmDashboard: React.FC<RmDashboardProps> = ({
   leads,
   onSelectLead,
-  onInitiateCall,
-  onQuickLogOutcome,
   onOpenNewLead,
   onOpenBulkUpload,
   onViewAllLeads,
@@ -50,13 +46,6 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   const [actionFilter, setActionFilter] = useState<'all' | 'breached' | 'callbacks' | 'pending'>('all');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const mockAllLeads = useMemo(() => generateMockAllLeads(), []);
-
-  // Handle inline lead updates (status, journey stage, calling status)
-  const handleUpdateLead = (updatedLead: StudentLead) => {
-    console.log('Lead updated:', updatedLead);
-    // Parent component should handle the actual state update
-    // For now, this triggers the parent to refresh/update the lead
-  };
 
   // Calculate metrics once - single source of truth
   const metrics = useMemo(() => {
@@ -244,8 +233,6 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
         <AllLeadsView
           leads={mockAllLeads}
           onSelectLead={onSelectLead}
-          onInitiateCall={onInitiateCall}
-          onQuickLogOutcome={onQuickLogOutcome}
         />
       ) : (
         <LeadTable
@@ -255,9 +242,6 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
               : leads.slice(0, 7)
           }
           onSelectLead={onSelectLead}
-          onInitiateCall={onInitiateCall}
-          onQuickLogOutcome={onQuickLogOutcome}
-          onUpdateLead={handleUpdateLead}
           enableColumnFilter={false}
         />
       )}

@@ -5,8 +5,6 @@ import { LeadTable } from './LeadTable';
 interface AllLeadsViewProps {
   leads: StudentLead[];
   onSelectLead: (lead: StudentLead) => void;
-  onInitiateCall: (lead: StudentLead) => void;
-  onQuickLogOutcome: (lead: StudentLead) => void;
 }
 
 interface ClaimedLeadState {
@@ -20,14 +18,17 @@ interface ClaimedLeadState {
 export const AllLeadsView: React.FC<AllLeadsViewProps> = ({
   leads,
   onSelectLead,
-  onInitiateCall,
-  onQuickLogOutcome,
 }) => {
   const [claimedLeads, setClaimedLeads] = useState<ClaimedLeadState>({});
 
-  // Filter leads to show only available (unclaimed) leads
+  // Filter to available claim leads: qualified, unassigned, and not yet claimed in this session
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => !claimedLeads[lead.id]);
+    return leads.filter(lead => {
+      if (claimedLeads[lead.id]) return false;
+      if (lead.qualificationStatus !== 'Qualified') return false;
+      if (lead.leadOwner && lead.leadOwner !== 'Unassigned') return false;
+      return true;
+    });
   }, [leads, claimedLeads]);
 
   // Calculate summary metrics
@@ -60,21 +61,12 @@ export const AllLeadsView: React.FC<AllLeadsViewProps> = ({
     }));
   };
 
-  // Handle inline lead updates (status, journey stage, calling status)
-  const handleUpdateLead = (updatedLead: StudentLead) => {
-    console.log('Lead updated:', updatedLead);
-    // Parent component should handle the actual state update
-  };
-
   return (
     <div className="space-y-6">
       {/* Lead Table */}
       <LeadTable
         leads={filteredLeads}
         onSelectLead={onSelectLead}
-        onInitiateCall={onInitiateCall}
-        onQuickLogOutcome={onQuickLogOutcome}
-        onUpdateLead={handleUpdateLead}
         enableColumnFilter={false}
         showClaimButton={true}
         onClaimLead={handleClaimLead}

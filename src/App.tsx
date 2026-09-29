@@ -6,6 +6,8 @@ import { RmDashboard } from './components/RmDashboard';
 import { TeamLeadDashboard } from './components/TeamLeadDashboard';
 import { HeadDashboard } from './components/HeadDashboard';
 import { BdeDashboard } from './components/BdeDashboard';
+import { ManagerDashboard } from './components/ManagerDashboard';
+import { QualificationDashboard } from './components/QualificationDashboard';
 import { LeadTable } from './components/LeadTable';
 import { TeamManagementPage } from './components/TeamManagementPage';
 import { PartnerManagementPage } from './components/PartnerManagementPage';
@@ -23,6 +25,146 @@ import { ArrowLeft, Filter } from 'lucide-react';
 import { searchLeads } from './utils/filterHelpers';
 import { isLeadOverdue } from './utils/slaHelpers';
 import { createLeadAssignment, createBulkAssignment } from './utils/assignmentHelpers';
+
+// Dummy active Team Leads under Manager Virendra (Delhi NCR) and the agents that report to them.
+// Names match the leadOwner values used in INITIAL_LEADS so the Manager rollup shows real counts.
+const DUMMY_ACTIVE_TEAM: TeamMember[] = [
+  // Team Lead 1: owns leads assigned to "Priya Patel" and "Rohan Mehta"
+  {
+    id: 'tm_tl_001',
+    userId: 'user_tl001',
+    name: 'Priya Patel',
+    email: 'priya.patel@zolve.com',
+    phone: '9000000001',
+    role: 'Team Lead',
+    experienceLevel: 'Lead',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'mgr_virendra',
+    managerName: 'Manager Virendra',
+    product: 'Education Loan',
+    monthlyTarget: 60,
+    capacityPercent: 75,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Head',
+    status: 'Active',
+    approvalHistory: [],
+  },
+  {
+    id: 'tm_ag_001',
+    userId: 'user_ag001',
+    name: 'Rohan Mehta',
+    email: 'rohan.mehta@zolve.com',
+    phone: '9000000002',
+    role: 'Agent',
+    experienceLevel: 'Senior',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'user_tl001',
+    managerName: 'Priya Patel',
+    product: 'Education Loan',
+    monthlyTarget: 25,
+    capacityPercent: 82,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Priya Patel',
+    status: 'Active',
+    approvalHistory: [],
+  },
+  // Team Lead 2: owns leads assigned to "Ankit Verma" and "Sneha Rao"
+  {
+    id: 'tm_tl_002',
+    userId: 'user_tl002',
+    name: 'Ankit Verma',
+    email: 'ankit.verma@zolve.com',
+    phone: '9000000003',
+    role: 'Team Lead',
+    experienceLevel: 'Lead',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'mgr_virendra',
+    managerName: 'Manager Virendra',
+    product: 'Bank Account',
+    monthlyTarget: 55,
+    capacityPercent: 68,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Head',
+    status: 'Active',
+    approvalHistory: [],
+  },
+  {
+    id: 'tm_ag_002',
+    userId: 'user_ag002',
+    name: 'Sneha Rao',
+    email: 'sneha.rao@zolve.com',
+    phone: '9000000004',
+    role: 'Agent',
+    experienceLevel: 'Mid',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'user_tl002',
+    managerName: 'Ankit Verma',
+    product: 'Admissions',
+    monthlyTarget: 20,
+    capacityPercent: 60,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Ankit Verma',
+    status: 'Active',
+    approvalHistory: [],
+  },
+  // Team Lead 3: owns leads assigned to "Vikas" and "Virendra (You)"
+  {
+    id: 'tm_tl_003',
+    userId: 'user_tl003',
+    name: 'Vikas',
+    email: 'vikas@zolve.com',
+    phone: '9000000005',
+    role: 'Team Lead',
+    experienceLevel: 'Lead',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'mgr_virendra',
+    managerName: 'Manager Virendra',
+    product: 'Education Loan',
+    monthlyTarget: 70,
+    capacityPercent: 85,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 240 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Head',
+    status: 'Active',
+    approvalHistory: [],
+  },
+  {
+    id: 'tm_ag_003',
+    userId: 'user_ag003',
+    name: 'Virendra (You)',
+    email: 'virendra@zolve.com',
+    phone: '9000000006',
+    role: 'Agent',
+    experienceLevel: 'Senior',
+    location: 'Delhi NCR',
+    locationId: 'loc_001',
+    managerId: 'user_tl003',
+    managerName: 'Vikas',
+    product: 'Education Loan',
+    monthlyTarget: 30,
+    capacityPercent: 90,
+    employmentType: 'Full-time',
+    joiningDate: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date(Date.now() - 150 * 24 * 60 * 60 * 1000).toISOString(),
+    createdBy: 'Vikas',
+    status: 'Active',
+    approvalHistory: [],
+  },
+];
 
 // Dummy data for team member approvals
 const DUMMY_PENDING_TEAM_MEMBERS: TeamMember[] = [
@@ -333,15 +475,15 @@ const DUMMY_PENDING_PARTNERS: Partner[] = [
 export default function App() {
   const [leads, setLeads] = useState<StudentLead[]>(INITIAL_LEADS);
   const [partners, setPartners] = useState<Partner[]>(DUMMY_PENDING_PARTNERS);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(DUMMY_PENDING_TEAM_MEMBERS);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([...DUMMY_ACTIVE_TEAM, ...DUMMY_PENDING_TEAM_MEMBERS]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'head' | 'bde' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
-  const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'head' | 'bde'>('dashboard' as any);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'head' | 'bde' | 'qualification' | 'manager' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
+  const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'head' | 'bde' | 'qualification' | 'manager'>('dashboard' as any);
   const [selectedEducationLoanApplicationId, setSelectedEducationLoanApplicationId] = useState<string | null>(null);
   const [selectedLoanProductFlow, setSelectedLoanProductFlow] = useState<any>(null);
   const [selectedTeamMemberId, setSelectedTeamMemberId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
-  const [currentRole, setCurrentRole] = useState<'agent' | 'team_lead' | 'head' | 'bde'>('team_lead');
+  const [currentRole, setCurrentRole] = useState<'agent' | 'team_lead' | 'manager' | 'head' | 'bde' | 'qualification'>('team_lead');
   const [kpiFilter, setKpiFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -422,14 +564,16 @@ export default function App() {
     setCurrentView(lastDashboardView);
   };
 
-  const handleSwitchRole = (role: 'agent' | 'team_lead' | 'head' | 'bde') => {
+  const handleSwitchRole = (role: 'agent' | 'team_lead' | 'manager' | 'head' | 'bde' | 'qualification') => {
     setCurrentRole(role);
     // Map role to appropriate dashboard view
-    const viewMap: Record<string, 'dashboard' | 'head' | 'bde'> = {
+    const viewMap: Record<string, 'dashboard' | 'head' | 'bde' | 'qualification' | 'manager'> = {
       agent: 'dashboard',
       team_lead: 'dashboard',
+      manager: 'manager',
       head: 'head',
       bde: 'bde',
+      qualification: 'qualification',
     };
     setCurrentView(viewMap[role] as any);
     setLastDashboardView(viewMap[role] as any);
@@ -445,12 +589,6 @@ export default function App() {
   const handleInitiateCall = (lead: StudentLead) => {
     setActiveCallingLead(lead);
     setIsLiveCallMode(true);
-    setIsCallModalOpen(true);
-  };
-
-  const handleQuickLogOutcome = (lead: StudentLead) => {
-    setActiveCallingLead(lead);
-    setIsLiveCallMode(false);
     setIsCallModalOpen(true);
   };
 
@@ -707,8 +845,10 @@ export default function App() {
         {[
           { role: 'agent' as const, label: 'RM (Agent)' },
           { role: 'team_lead' as const, label: 'Team Lead' },
+          { role: 'manager' as const, label: 'Manager' },
           { role: 'head' as const, label: 'Head' },
           { role: 'bde' as const, label: 'BDE' },
+          { role: 'qualification' as const, label: 'Qualification' },
         ].map(({ role, label }) => (
           <button
             key={role}
@@ -733,8 +873,6 @@ export default function App() {
               leads={leads}
               teamMembers={teamMembers}
               onSelectLead={handleSelectLead}
-              onInitiateCall={handleInitiateCall}
-              onQuickLogOutcome={handleQuickLogOutcome}
               onBulkAssignLeads={handleBulkReassignLeads}
               onViewLeadManagement={() => handleNavigateToAllLeads('all')}
               onViewTeamManagement={() => setCurrentView('team_management')}
@@ -745,8 +883,6 @@ export default function App() {
             <RmDashboard
               leads={leads}
               onSelectLead={handleSelectLead}
-              onInitiateCall={handleInitiateCall}
-              onQuickLogOutcome={handleQuickLogOutcome}
               onOpenNewLead={() => setIsChoiceModalOpen(true)}
               onOpenBulkUpload={() => setIsBulkUploadOpen(true)}
               onViewAllLeads={handleNavigateToAllLeads}
@@ -769,6 +905,24 @@ export default function App() {
             partners={partners}
             onSelectLead={handleSelectLead}
             onCreateNewPartner={() => setIsOnboardPartnerOpen(true)}
+          />
+        ) : currentView === 'qualification' ? (
+          /* Qualification Dashboard - Pending qualification queue */
+          <QualificationDashboard
+            leads={leads}
+            onSelectLead={handleSelectLead}
+          />
+        ) : currentView === 'manager' ? (
+          /* Manager Dashboard - Location-level rollup */
+          <ManagerDashboard
+            leads={leads}
+            teamMembers={teamMembers}
+            locationName="Delhi NCR"
+            onSelectLead={handleSelectLead}
+            onBulkAssignLeads={handleBulkReassignLeads}
+            onViewLeadManagement={() => handleNavigateToAllLeads('all')}
+            onViewTeamManagement={() => setCurrentView('team_management')}
+            onViewPartnerManagement={() => setCurrentView('partner_management')}
           />
         ) : currentView === 'leads_list' ? (
           /* Full Lead Management Screen (Answers: "Show me all my leads") */
@@ -831,8 +985,6 @@ export default function App() {
             <LeadTable
               leads={displayLeads}
               onSelectLead={handleSelectLead}
-              onInitiateCall={handleInitiateCall}
-              onQuickLogOutcome={handleQuickLogOutcome}
               kpiFilterLabel={getKpiFilterLabel()}
               onClearKpiFilter={() => setKpiFilter('all')}
             />

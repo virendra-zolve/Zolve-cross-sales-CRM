@@ -403,3 +403,34 @@ All documents are current as of September 15, 2026.
 
 **Ready to get started? Begin with [NEXT_STEPS.md](./NEXT_STEPS.md) Session 1! 🚀**
 
+
+
+## Session Work - Inline Table Editing (Sept 24, 2026)
+
+✅ **Feature:** Click-to-edit dropdowns for Lead Status, Journey Stage, Calling Status
+
+**Documentation:**
+- `INLINE_EDITING_SUMMARY.md` - Overview and how it works
+- `INLINE_EDITING_IMPLEMENTATION.md` - Technical details
+- `INLINE_EDITING_TEST_GUIDE.md` - How to test the feature
+- `NEXT_SESSION_INLINE_EDITING_API.md` - How to wire up to API
+- `SESSION_WORK_SUMMARY_INLINE_EDITING.md` - Session details
+
+**Key Changes:**
+- Modified: `src/components/LeadTable.tsx` (~150 lines)
+- Feature: Click any status badge to open dropdown
+- Status: ✅ Complete and ready for API integration
+- Build: ✅ Passing with 0 errors
+
+**To Test:**
+```bash
+npm run dev
+# Navigate to lead table
+# Click any badge: Lead Status, Journey Stage, or Calling Status
+# Select new value from dropdown
+```
+
+**To Integrate:**
+1. Wire up `onUpdateLead` callback to LeadsDatabase API
+2. See `NEXT_SESSION_INLINE_EDITING_API.md` for detailed guide
+3. Estimated time: 30-60 minutes

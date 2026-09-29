@@ -1,10 +1,17 @@
-# Implementation Plan: Education Loan Journey - Frontend Only
+# Implementation Plan: Education Loan Journey with 7-Stage Progression
 
 ## Overview
 
-This task list covers the complete frontend implementation of the Education Loan Journey feature, a dedicated full-screen UI for guiding applicants through multi-stage education loan applications. All backend API methods (LeadsDatabase) are assumed to be fully implemented and working. This is purely UI/component work with routing, forms, validation feedback, and state management.
+This task list covers the complete frontend implementation of the Education Loan Journey feature with enhanced 7-stage loan progression (STARTED → DOCS_PENDING → DOCS_RECEIVED → CALL_SCHEDULED → SANCTIONED → DISBURSED → LOST) and multi-lender coordination. All backend API methods (LeadsDatabase) are assumed to be fully implemented and working. This is purely UI/component work with routing, forms, validation feedback, and state management.
 
-**Key Constraint:** No backend/API development. All tasks are React/TypeScript component development, routing, form handling, and UI integration.
+**Key Enhancements from Better Journey Flow:**
+- **7-stage loan progression** model with automatic transitions
+- **Multi-lender tracking** with match scores (0-100) and sanction details
+- **Auto-transitions** based on document approval and lender events
+- **Stage history** with full audit trail
+- **Lender status lifecycle** (INTERESTED → APPLIED → UNDER_REVIEW → APPROVED/REJECTED → DISBURSED → WITHDRAWN)
+
+**Key Constraint:** No storage logic changes. All document storage, lead management, and normalized schema remain unchanged. New types added only for journey flow orchestration.
 
 ---
 
@@ -12,6 +19,9 @@ This task list covers the complete frontend implementation of the Education Loan
 
 - [x] 1. Create types and integrate types into src/types/normalized.ts
   - Add EducationLoanApplication, LoanProductFlow, ApplicationStatus, and all stage-specific interfaces to src/types/normalized.ts
+  - Add LoanStage enum (STARTED, DOCS_PENDING, DOCS_RECEIVED, CALL_SCHEDULED, SANCTIONED, DISBURSED, LOST)
+  - Add LenderStatus enum (INTERESTED, APPLIED, UNDER_REVIEW, APPROVED, REJECTED, DISBURSED, WITHDRAWN)
+  - Add LenderApplicationProgress interface for multi-lender tracking with match scores and sanction details
   - Add DocumentCategoryExtended enum and update LeadDocument interface
   - Validate types compile without errors
   - _Requirements: 1.1, 1.2, 1.3_
@@ -229,7 +239,53 @@ This task list covers the complete frontend implementation of the Education Loan
     - On cancel: dismiss modal and stay on page
     - _Requirements: 14.6_
 
-- [ ] 10. Integrate auto-population of shared fields from LeadProfile on journey entry
+- [ ] 10. Implement 7-stage loan progression model and tracking
+  - [x] 10.1 Add loan stage progression logic to EducationLoanJourneyPage
+    - Initialize application with loanStage='STARTED'
+    - Display current loanStage prominently in header (separate from applicationStatus)
+    - Implement updateLoanStage handler that tracks stage history
+    - Create activity record for each stage transition with reason
+    - _Journey Flow: Stage Progression_
+
+  - [ ] 10.2 Implement auto-transitions based on document approval
+    - When all required documents approved: auto-transition DOCS_PENDING → DOCS_RECEIVED
+    - When requestDocuments called: auto-transition STARTED → DOCS_PENDING
+    - Track timestamp of auto-transitions in stageHistory
+    - _Journey Flow: Auto-Transitions_
+
+  - [x] 10.3 Display stage history and timeline in UI
+    - Create StageHistoryTimeline component showing all stage transitions
+    - Display transition timestamps, from/to stages, and reasons
+    - Show in read-only section of journey page or summary view
+    - _Journey Flow: Audit Trail_
+
+- [ ] 11. Implement multi-lender coordination and tracking
+  - [x] 11.1 Create LenderManagementComponent for adding/tracking lenders
+    - Display list of all lenders for current loan with status, match score, sanction details
+    - Add button to add new lender with name, match score, recommendation source
+    - Show lender status (INTERESTED, APPLIED, UNDER_REVIEW, APPROVED, REJECTED, DISBURSED, WITHDRAWN)
+    - _Journey Flow: Multi-Lender Tracking_
+
+  - [x] 11.2 Implement lender status workflow UI
+    - Create LenderStatusForm for updating lender status with conditional fields
+    - APPROVED status: show sanction details form (amount, ROI, fee, dates)
+    - REJECTED status: show rejection reason field
+    - DISBURSED status: show disbursement details form (amount, date)
+    - _Journey Flow: Lender Status Transitions_
+
+  - [x] 11.3 Implement match score display and ranking
+    - Display match scores (0-100) for each lender
+    - Sort lenders by match score (highest first)
+    - Show visual match score indicator (progress bar or percentage badge)
+    - _Journey Flow: Match Scoring_
+
+  - [x] 11.4 Track lender status history
+    - For each lender, maintain statusHistory array showing all transitions
+    - Display lender status change timeline
+    - Create activity records for significant lender transitions
+    - _Journey Flow: Lender Audit Trail_
+
+- [ ] 12. Integrate auto-population of shared fields from LeadProfile on journey entry
   - [ ] 10.1 Load lead profile data when journey page mounts
     - Fetch LeadMaster and LeadProfile for the lead
     - Auto-populate shared fields: name, email, phone, DOB, address, destination countries, degree type, course, intake year, universities, co-applicant details
