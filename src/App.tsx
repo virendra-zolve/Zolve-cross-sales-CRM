@@ -20,6 +20,8 @@ import { BulkUploadModal } from './components/BulkUploadModal';
 import { NewLeadModal } from './components/NewLeadModal';
 import { CreateLeadChoiceModal } from './components/CreateLeadChoiceModal';
 import { OnboardPartnerModal } from './components/OnboardPartnerModal';
+import { PartnerOnboardingModal } from './components/PartnerOnboardingModal';
+import { partnersDb } from './api/partnersApi';
 import { TeamOnboardingModal } from './components/TeamOnboardingModal';
 import { ArrowLeft, Filter } from 'lucide-react';
 import { searchLeads } from './utils/filterHelpers';
@@ -1181,19 +1183,29 @@ export default function App() {
         existingLeads={leads}
       />
 
-      {/* Onboard Partner Modal */}
-      <OnboardPartnerModal
+      {/* Onboard Partner Modal (new normalized model with commission slabs) */}
+      <PartnerOnboardingModal
         isOpen={isOnboardPartnerOpen}
         onClose={() => setIsOnboardPartnerOpen(false)}
-        onCreatePartner={(newPartner) => {
-          setPartners(prev => [newPartner, ...prev]);
+        bdOwnerId="U1001"
+        bdOwnerName="Arun"
+        onSubmit={(master, commissions) => {
+          const res = partnersDb.createPartner({ ...master, submit: true });
+          if (res.success && res.data) {
+            const partnerId = res.data.id;
+            commissions.forEach((c) =>
+              partnersDb.setCommission(partnerId, {
+                partnerId,
+                product: c.product,
+                tierMetric: c.tierMetric,
+                commissionType: c.commissionType,
+                effectiveFrom: c.effectiveFrom,
+                status: 'Active',
+                tiers: c.tiers,
+              })
+            );
+          }
         }}
-        bdeUserId="bde_001"
-        bdeName="BDE User"
-        locationId="loc_001"
-        locationName="Delhi NCR"
-        managerId="mgr_001"
-        managerName="Manager Virendra"
       />
 
       {/* Team Onboarding Modal */}
