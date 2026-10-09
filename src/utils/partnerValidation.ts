@@ -13,8 +13,15 @@ export interface ValidationError {
   message: string;
 }
 
-const PARTNER_TYPES: PartnerType[] = ['Education Consultant', 'FX', 'DSA', 'Other'];
-const PARTNER_SCALES: PartnerScale[] = ['Single Branch', 'Multi Branch'];
+const PARTNER_TYPES: PartnerType[] = [
+  'Education Loan',
+  'eSIM',
+  'Accommodation',
+  'Insurance',
+  'Bank Account',
+  'Credit Card',
+];
+const PARTNER_SCALES: PartnerScale[] = ['Single Branch', 'Multi Branch', 'Franchise'];
 const ADDRESS_TYPES: AddressType[] = ['Head Office', 'Branch'];
 
 export function isValidPan(pan: string): boolean {
@@ -65,6 +72,10 @@ function validateAddress(
 export function validatePartnerMaster(p: Partial<PartnerMaster>): ValidationError[] {
   const errors: ValidationError[] = [];
 
+  // A branch linked to a parent Head Office inherits legal identity (PAN/GST/CIN)
+  // and owner from the parent, so those fields are not required here.
+  const isLinkedBranch = p.officeType === 'Branch' && !!p.parentPartnerId;
+
   // Mandatory text fields
   if (!p.legalBusinessName?.trim()) {
     errors.push({ field: 'legalBusinessName', message: 'Legal business name is required' });
@@ -89,14 +100,17 @@ export function validatePartnerMaster(p: Partial<PartnerMaster>): ValidationErro
     errors.push({ field: 'addressType', message: 'Invalid address type' });
   }
 
-  // PAN
-  if (!p.panNumber?.trim()) {
-    errors.push({ field: 'panNumber', message: 'PAN number is required' });
-  } else if (!isValidPan(p.panNumber)) {
-    errors.push({ field: 'panNumber', message: 'Invalid PAN format' });
+  // PAN (inherited from parent for linked branches)
+  if (!isLinkedBranch) {
+    if (!p.panNumber?.trim()) {
+      errors.push({ field: 'panNumber', message: 'PAN number is required' });
+    } else if (!isValidPan(p.panNumber)) {
+      errors.push({ field: 'panNumber', message: 'Invalid PAN format' });
+    }
   }
 
-  // Owner
+  // Owner (inherited from parent for linked branches)
+  if (!isLinkedBranch) {
   if (!p.ownerName?.trim()) {
     errors.push({ field: 'ownerName', message: 'Owner name is required' });
   }
@@ -110,20 +124,33 @@ export function validatePartnerMaster(p: Partial<PartnerMaster>): ValidationErro
   } else if (!isValidPhone(p.ownerPhone)) {
     errors.push({ field: 'ownerPhone', message: 'Invalid owner phone' });
   }
+  }
 
-  // Contact person
-  if (!p.contactPersonName?.trim()) {
-    errors.push({ field: 'contactPersonName', message: 'Contact person name is required' });
-  }
-  if (!p.contactPersonEmail?.trim()) {
-    errors.push({ field: 'contactPersonEmail', message: 'Contact person email is required' });
-  } else if (!isValidEmail(p.contactPersonEmail)) {
-    errors.push({ field: 'contactPersonEmail', message: 'Invalid contact person email' });
-  }
-  if (!p.contactPersonPhone?.trim()) {
-    errors.push({ field: 'contactPersonPhone', message: 'Contact person phone is required' });
-  } else if (!isValidPhone(p.contactPersonPhone)) {
-    errors.push({ field: 'contactPersonPhone', message: 'Invalid contact person phone' });
+  // Contact person(s)
+  // When the owner is also the contact (single-person shop), no contact rows are required.
+  if (!p.contactSameAsOwner) {
+    const contacts = p.contacts || [];
+    if (contacts.length === 0) {
+      errors.push({ field: 'contacts', message: 'At least one contact person is required' });
+    }
+    contacts.forEach((c, i) => {
+      if (!c.name?.trim()) {
+        errors.push({ field: `contacts[${i}].name`, message: 'Contact name is required' });
+      }
+      if (!c.designation?.trim()) {
+        errors.push({ field: `contacts[${i}].designation`, message: 'Contact designation is required' });
+      }
+      if (!c.email?.trim()) {
+        errors.push({ field: `contacts[${i}].email`, message: 'Contact email is required' });
+      } else if (!isValidEmail(c.email)) {
+        errors.push({ field: `contacts[${i}].email`, message: 'Invalid contact email' });
+      }
+      if (!c.phone?.trim()) {
+        errors.push({ field: `contacts[${i}].phone`, message: 'Contact phone is required' });
+      } else if (!isValidPhone(c.phone)) {
+        errors.push({ field: `contacts[${i}].phone`, message: 'Invalid contact phone' });
+      }
+    });
   }
 
   // BD Owner

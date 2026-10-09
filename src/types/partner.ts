@@ -14,9 +14,25 @@ export type PartnerStatus =
   | 'Rejected'
   | 'Active';
 
-export type PartnerType = 'Education Consultant' | 'FX' | 'DSA' | 'Other';
-export type PartnerScale = 'Single Branch' | 'Multi Branch';
+export type PartnerType =
+  | 'Education Loan'
+  | 'eSIM'
+  | 'Accommodation'
+  | 'Insurance'
+  | 'Bank Account'
+  | 'Credit Card';
+export type PartnerScale = 'Single Branch' | 'Multi Branch' | 'Franchise';
 export type AddressType = 'Head Office' | 'Branch';
+
+// Products a partner can be onboarded for / earn commission on.
+export const PARTNER_PRODUCTS = [
+  'Education Loan',
+  'eSIM',
+  'Accommodation',
+  'Insurance',
+  'Bank Account',
+  'Credit Card',
+] as const;
 
 export interface PartnerAddress {
   addressLine1: string;
@@ -25,6 +41,13 @@ export interface PartnerAddress {
   state: string;
   pincode: string;
   country: string;
+}
+
+export interface PartnerContact {
+  name: string;
+  designation: string;
+  email: string;
+  phone: string;
 }
 
 export interface PartnerMaster {
@@ -46,24 +69,41 @@ export interface PartnerMaster {
   ownerEmail: string;
   ownerPhone: string;
 
-  // Contact person
-  contactPersonName: string;
-  contactPersonEmail: string;
-  contactPersonPhone: string;
+  // Contact person(s)
+  // When contactSameAsOwner is true, the owner is the sole contact and `contacts` may be empty.
+  contactSameAsOwner: boolean;
+  contacts: PartnerContact[];
+
+  // Legacy single-contact fields (kept optional for backward compatibility)
+  contactPersonName?: string;
+  contactPersonEmail?: string;
+  contactPersonPhone?: string;
+
+  // Office classification & multi-branch linking
+  officeType: AddressType; // 'Head Office' | 'Branch'
+  parentPartnerId?: string; // set when officeType === 'Branch' and linked to a Head Office partner
 
   // Addresses
   registeredAddress: PartnerAddress;
+  addressType: AddressType; // type of the registered address
   operatingSameAsRegistered: boolean;
-  addressType: AddressType;
   operatingAddress?: PartnerAddress; // required when operatingSameAsRegistered === false
 
   // Ownership
   bdOwnerId: string; // active BD user id, e.g. U1001
   bdOwnerName?: string;
 
+  // Country-wise business potential (students per year by destination country)
+  countryPotential?: CountryPotential[];
+
   // Timestamps
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CountryPotential {
+  country: string;
+  studentsPerYear: number;
 }
 
 // ============================================================================

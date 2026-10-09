@@ -32,7 +32,7 @@ import {
 type CreatePartnerInput = Omit<
   PartnerMaster,
   'id' | 'partnerCode' | 'status' | 'createdAt' | 'updatedAt'
-> & { submit?: boolean };
+> & { submit?: boolean; skipValidation?: boolean };
 
 type CommissionInput = Omit<PartnerCommissionConfig, 'id' | 'tiers'> & {
   tiers: Omit<CommissionTier, 'id' | 'commissionId'>[];
@@ -103,9 +103,11 @@ export class PartnersDatabase {
   // ========== CRUD + workflow ==========
 
   createPartner(input: CreatePartnerInput): ApiResponse<PartnerMaster> {
-    const errors = validatePartnerMaster(input);
-    if (errors.length > 0) {
-      return err('VALIDATION_ERROR', errors.map((e) => `${e.field}: ${e.message}`).join('; '));
+    if (!input.skipValidation) {
+      const errors = validatePartnerMaster(input);
+      if (errors.length > 0) {
+        return err('VALIDATION_ERROR', errors.map((e) => `${e.field}: ${e.message}`).join('; '));
+      }
     }
 
     const now = new Date().toISOString();
@@ -121,6 +123,7 @@ export class PartnersDatabase {
       updatedAt: now,
     };
     delete (partner as Partial<CreatePartnerInput>).submit;
+    delete (partner as Partial<CreatePartnerInput>).skipValidation;
 
     this.partners.set(id, partner);
     this.recordHistory(id, input.submit ? 'submitted' : 'submitted', input.bdOwnerName || input.bdOwnerId, 'BD');

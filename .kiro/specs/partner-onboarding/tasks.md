@@ -64,3 +64,51 @@
   - Run `npm run lint` (tsc --noEmit); fix any type errors across new and updated files
   - Run the test suite if a runner is available; otherwise confirm logic via the type-check gate
   - _Requirements: all_
+
+## PRD v2 Alignment Tasks
+
+- [ ] 10. Extend partner model for PRD v2
+  - Add Source/PartnerSource, sourceCode, bdOwnerEmail, bdEmployeeCode, createdBy/updatedBy, countryPotential to the master; add PartnerAddressRecord, PartnerEligibleProducts, CommissionChangeRequest, PartnerActivityEntry/PartnerActivityType, PartnerInvoice, PartnerPayment; add currency to commission config
+  - _Requirements: 1, 3, 9, 10, 12, 13, 14_
+
+- [ ] 11. Eligible Products (separate multi-select)
+  - API `setEligibleProducts`/`getEligibleProducts`; onboarding modal multi-select independent of Partner Type; detail view section
+  - _Requirements: 9_
+
+- [ ] 12. Multiple addresses
+  - API `addAddress`/`listAddresses` with one Head Office + many Branch validation; onboarding multi-address editor; detail view Addresses section
+  - _Requirements: 10_
+
+- [ ] 13. Ownership reassignment with history
+  - API `reassignOwner` recording previous/new owner, actor, timestamp into activity trail; wire detail view Reassign BD to this
+  - _Requirements: 11, 13_
+
+- [ ] 14. Commission change request + approval
+  - API `requestCommissionChange`/`reviewCommissionChange` preserving prior terms; BDE request UI; Head review UI
+  - _Requirements: 12_
+
+- [ ] 15. Activity trail
+  - Internal `logActivity` for all PRD §13 events; `getActivityTrail`; detail view Activity Trail section (read-only)
+  - _Requirements: 13_
+
+- [ ] 16. Source Code generation on activation
+  - Generate Source Code with Partner Code on approve and on migration; ensure uniqueness
+  - _Requirements: 2_
+
+- [ ] 17. Partner Detail View — V1 four-tab layout
+  - Header card (Nexus-style: avatar, name, status pill, City, Partner ID/Code, Type, Scale, BD owner name+ID)
+  - Tabs: Partner Details (Business Details + Addresses + Eligible Products), Documents, Commissions (products + slabs + Edit), Activity (read-only trail)
+  - Reassign BD in header; no Earnings/Invoices/Performance in V1
+  - _Requirements: 14, 11, 13_
+
+- [ ]* 17a. V2 detail sections (deferred)
+  - Business Performance, Earnings, Invoices, Payment History, Country-wise Potential; mock reads
+  - _Requirements: 14a_
+
+- [ ]* 18. Partner portal access flag
+  - One access per partner, enabled only when Active
+  - _Requirements: 15_
+
+- [ ] 19. Update tests for v2 model
+  - Validation (Source required, Partner Type enum), eligible-products independence, address rules, reassignment history, commission change preserve-history, source code uniqueness
+  - _Requirements: 1, 9, 10, 11, 12_

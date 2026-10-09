@@ -215,8 +215,28 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
               </div>
             </div>
 
-            {/* Right side: Call button + Save controls */}
+            {/* Right side: Lead Status + Call button + Save controls */}
             <div className="flex items-center gap-2">
+              {/* Lead Status dropdown */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase">Lead Status</span>
+                <select
+                  value={draftLead.leadStatus}
+                  onChange={(e) => handleUpdateDraftField('leadStatus', e.target.value as StudentLead['leadStatus'])}
+                  className={`text-xs font-semibold bg-transparent focus:outline-none cursor-pointer ${
+                    draftLead.leadStatus === 'Active'
+                      ? 'text-emerald-700'
+                      : draftLead.leadStatus === 'Closed'
+                      ? 'text-rose-700'
+                      : 'text-slate-700'
+                  }`}
+                >
+                  <option value="Active">Active</option>
+                  <option value="Closed">Closed</option>
+                  <option value="Archived">Archived</option>
+                </select>
+              </div>
+
               <button
                 onClick={() => setIsCallStatusModalOpen(true)}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg cursor-pointer transition-colors whitespace-nowrap"

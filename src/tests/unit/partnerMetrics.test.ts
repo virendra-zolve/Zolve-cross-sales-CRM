@@ -49,9 +49,9 @@ describe('calculatePartnerPerformance', () => {
 describe('calculateBdPartnerMetrics', () => {
   function partner(id: string, status: PartnerMaster['status']): PartnerMaster {
     return {
-      id, status, legalBusinessName: id, partnerType: 'DSA', partnerScale: 'Single Branch',
+      id, status, legalBusinessName: id, partnerType: 'Credit Card', partnerScale: 'Single Branch',
       panNumber: 'ABCDE1234F', ownerName: 'o', ownerEmail: 'o@x.com', ownerPhone: '9999999999',
-      contactPersonName: 'c', contactPersonEmail: 'c@x.com', contactPersonPhone: '9999999999',
+      contactSameAsOwner: true, contacts: [], officeType: 'Head Office',
       registeredAddress: { addressLine1: 'a', city: 'c', state: 's', pincode: '1', country: 'in' },
       operatingSameAsRegistered: true, addressType: 'Head Office', bdOwnerId: 'U1001',
       createdAt: '', updatedAt: '',

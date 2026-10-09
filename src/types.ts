@@ -337,7 +337,13 @@ export interface PartnerApprovalAction {
   commissionsChanged?: Array<{ product: MasterProduct; oldValue: number; newValue: number }>;
 }
 
-export type PartnerType = 'Agent' | 'School' | 'Coaching Center' | 'Overseas Hub' | 'Other';
+export type PartnerType =
+  | 'Education Loan'
+  | 'eSIM'
+  | 'Accommodation'
+  | 'Insurance'
+  | 'Bank Account'
+  | 'Credit Card';
 
 export interface PartnerAddress {
   addressLine1: string;
@@ -353,6 +359,36 @@ export interface PartnerCommission {
   product: MasterProduct;
   type: 'Percentage' | 'Fixed';
   value: number; // percentage or fixed amount
+}
+
+// Richer slab-based commission (PRD-aligned). Optional on the legacy Partner so
+// the existing flat `commissions` array keeps working for the list view.
+export interface PartnerCommissionSlab {
+  from: number;
+  to: number | null; // null = no upper limit (last slab)
+  value: number; // percent or flat per unit
+}
+
+export interface PartnerProductCommission {
+  product: MasterProduct;
+  commissionType: 'Percentage' | 'Fixed';
+  tierMetric: string;
+  slabs: PartnerCommissionSlab[];
+}
+
+// Commission change request (BDE requests → Head approves). History preserved.
+export interface CommissionChangeRequest {
+  id: string;
+  partnerId: string;
+  status: 'Pending' | 'Approved' | 'Rejected';
+  existingTerms: PartnerProductCommission[]; // snapshot before change
+  proposedTerms: PartnerProductCommission[];
+  requestedBy: string;
+  requestedByRole: 'BDE' | 'TL';
+  requestedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  comment?: string;
 }
 
 export interface Partner {
@@ -400,6 +436,15 @@ export interface Partner {
   // Products & Commission
   eligibleProducts: MasterProduct[];
   commissions: PartnerCommission[];
+  commissionSlabs?: PartnerProductCommission[]; // richer slab-based structure (optional)
+  commissionChangeRequests?: CommissionChangeRequest[]; // pending/approved/rejected change requests
+
+  // Multi-branch linking (optional, legacy-compatible)
+  officeType?: 'Head Office' | 'Branch';
+  parentPartnerId?: string;
+
+  // Country-wise business potential (students per year by destination country)
+  countryPotential?: { country: string; studentsPerYear: number }[];
   
   // Documents
   documents: PartnerDocument[];

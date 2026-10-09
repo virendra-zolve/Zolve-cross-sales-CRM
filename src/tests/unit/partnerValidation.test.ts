@@ -16,15 +16,17 @@ import { PartnerMaster } from '../../types/partner';
 function validPartner(): Partial<PartnerMaster> {
   return {
     legalBusinessName: 'Test Partner Pvt Ltd',
-    partnerType: 'Education Consultant',
+    partnerType: 'Education Loan',
     partnerScale: 'Multi Branch',
     panNumber: 'ABCDE1234F',
     ownerName: 'Gaurav Test',
     ownerEmail: 'owner@partner.com',
     ownerPhone: '9876543210',
-    contactPersonName: 'Gaurav Test',
-    contactPersonEmail: 'contact@partner.com',
-    contactPersonPhone: '9876543210',
+    contactSameAsOwner: false,
+    contacts: [
+      { name: 'Gaurav Test', designation: 'Director', email: 'contact@partner.com', phone: '9876543210' },
+    ],
+    officeType: 'Head Office',
     addressType: 'Head Office',
     bdOwnerId: 'U1001',
     operatingSameAsRegistered: true,

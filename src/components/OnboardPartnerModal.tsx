@@ -29,7 +29,7 @@ export const OnboardPartnerModal: React.FC<OnboardPartnerModalProps> = ({
   const [formData, setFormData] = useState({
     // Business Legal
     businessName: '',
-    partnerType: 'Agent' as PartnerType,
+    partnerType: 'Education Loan' as PartnerType,
     pan: '',
     panNumber: '',
     cin: '',
@@ -72,7 +72,7 @@ export const OnboardPartnerModal: React.FC<OnboardPartnerModalProps> = ({
 
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, File>>({});
 
-  const partnerTypes: PartnerType[] = ['Agent', 'School', 'Coaching Center', 'Overseas Hub', 'Other'];
+  const partnerTypes: PartnerType[] = ['Education Loan', 'eSIM', 'Accommodation', 'Insurance', 'Bank Account', 'Credit Card'];
   const products: MasterProduct[] = ['Education Loan', 'Test Prep', 'Admissions', 'Accommodation', 'eSIM'];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -196,7 +196,7 @@ export const OnboardPartnerModal: React.FC<OnboardPartnerModalProps> = ({
     setStep('details');
     setFormData({
       businessName: '',
-      partnerType: 'Agent',
+      partnerType: 'Education Loan',
       pan: '',
       panNumber: '',
       cin: '',

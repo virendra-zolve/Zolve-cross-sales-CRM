@@ -97,9 +97,18 @@ export type PartnerStatus =
   | 'Rejected'
   | 'Active';
 
-export type PartnerType = 'Education Consultant' | 'FX' | 'DSA' | 'Other';
+export type PartnerType =
+  | 'Education Loan' | 'eSIM' | 'Accommodation' | 'Insurance' | 'Bank Account' | 'Credit Card';
 export type PartnerScale = 'Single Branch' | 'Multi Branch';
 export type AddressType = 'Head Office' | 'Branch';
+export type PartnerSource = 'Channel Partner' | 'Referral' | 'Direct' | 'Other';
+export const PARTNER_PRODUCTS = ['Education Loan','eSIM','Accommodation','Insurance','Bank Account','Credit Card'] as const;
+
+// NOTE (PRD v2 alignment): Partner Type is single-select from the six product values.
+// Eligible Products is a SEPARATE multi-select of the same six values and must NOT be
+// inferred from Partner Type. Addresses are a separate repeatable entity (one Head Office
+// + many Branch). Source/Source Code, BD owner email/employee code, and audit fields live
+// on the master. Source Code and Partner Code are generated on final approval.
 
 export interface PartnerAddress {
   addressLine1: string;
@@ -350,3 +359,124 @@ These properties will be validated via unit tests over the pure helpers. (Vitest
 - **API tests** for `PartnersDatabase`: create → submit → review (all three outcomes) → activation + code generation; commission set/replace with cascade; document review gating activation; bulk migration bypassing workflow.
 - **Type check**: `npm run lint` (`tsc --noEmit`) must pass with no errors as the baseline verification gate.
 - Tests placed under `src/tests/` to match the existing structure (`properties/`, `unit/`). They are authored to run under Vitest; if Vitest is unavailable, `tsc --noEmit` plus a small runnable Node harness validates the logic.
+
+## PRD v2 Alignment — Additional Model & Components
+
+These additions align the design with the updated Zolve_Partner_Management_PRD. They extend (not replace) the model above.
+
+### Additional types (`src/types/partner.ts`)
+
+```typescript
+// Master additions
+export interface PartnerMasterV2Additions {
+  source: PartnerSource;        // Channel Partner / Referral / Direct / Other
+  sourceCode?: string;          // generated on activation, consumed by Lead Management
+  bdOwnerEmail?: string;        // system-maintained
+  bdEmployeeCode?: string;      // system-maintained
+  createdBy: string;
+  updatedBy: string;
+  // Country-wise business potential (display-only; unit unconfirmed)
+  countryPotential?: Partial<Record<'USA'|'UK'|'Canada'|'Australia'|'Germany'|'Others', number>>;
+  // Eligible products are stored separately (see PartnerEligibleProducts), NOT inferred from partnerType
+}
+
+export interface PartnerAddressRecord {
+  id: string;
+  partnerId: string;
+  addressType: AddressType;     // one Head Office + many Branch
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
+// Eligible products: separate multi-select
+export interface PartnerEligibleProducts {
+  partnerId: string;
+  products: string[];           // subset of PARTNER_PRODUCTS
+}
+
+// Commission additions
+// PartnerCommissionConfig gains: currency?: string (for Flat payouts)
+
+export interface CommissionChangeRequest {
+  id: string;
+  partnerId: string;
+  product: string;
+  existingTerms: PartnerCommissionConfig | null;  // snapshot for audit
+  proposedTerms: Omit<PartnerCommissionConfig,'id'|'partnerId'|'tiers'> & {
+    tiers: Omit<CommissionTier,'id'|'commissionId'>[];
+  };
+  status: 'Pending' | 'Approved' | 'Rejected';
+  requestedBy: string;
+  requestedAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  comment?: string;
+}
+
+// Activity trail: broaden action type to cover PRD §13 events
+export type PartnerActivityType =
+  | 'created' | 'details_updated' | 'submitted'
+  | 'approved' | 'rejected' | 'review_required' | 'resubmitted'
+  | 'reassigned' | 'eligible_products_changed'
+  | 'commission_change_requested' | 'commission_change_approved' | 'commission_change_rejected'
+  | 'commission_slabs_changed' | 'document_uploaded' | 'agreement_uploaded' | 'migrated';
+
+export interface PartnerActivityEntry {
+  id: string;
+  partnerId: string;
+  type: PartnerActivityType;
+  actor: string;
+  actorRole: 'BDE' | 'TL' | 'Manager' | 'Head' | 'System';
+  timestamp: string;
+  // optional structured detail
+  field?: string;
+  previousValue?: unknown;
+  newValue?: unknown;
+  comment?: string;
+}
+
+// Financial display-only records (linked to underlying systems)
+export interface PartnerInvoice {
+  id: string; partnerId: string; number: string; amount: number;
+  currency: string; status: string; issuedAt: string;
+}
+export interface PartnerPayment {
+  id: string; partnerId: string; amount: number; currency: string;
+  reference: string; status: string; paidAt?: string;
+}
+```
+
+### Maker–checker roles
+- Makers: `BDE`, `TL`. Checkers: `Manager`, `Head`. New-partner onboarding is submitted to the Head for the final decision. `actorRole` on workflow/activity entries reflects this.
+
+### API additions (`PartnersDatabase`)
+| Method | Purpose | Requirements |
+|---|---|---|
+| `setEligibleProducts(partnerId, products[])` | Set/replace eligible products; logs change | 9 |
+| `addAddress(partnerId, address)` / `listAddresses(partnerId)` | Manage Head Office + Branch addresses | 10 |
+| `reassignOwner(partnerId, newBdId, newBdName, actor)` | Reassign with history entry | 11 |
+| `requestCommissionChange(partnerId, proposed)` | BDE raises change request | 12 |
+| `reviewCommissionChange(requestId, decision, reviewer, comment)` | Head approves/rejects; applies on approve, preserves prior | 12 |
+| `logActivity(...)` (internal) + `getActivityTrail(partnerId)` | Immutable activity trail | 13 |
+| `getInvoices/getPayments/getEarnings(partnerId)` | Display-only financial reads (mock) | 14 |
+- `createPartner` extended for `source`, audit fields; `reviewPartner` approve path also generates `sourceCode`.
+- Source Code + Partner Code both generated on activation (approval or migration).
+
+### UI additions
+- **Onboarding modal**: add Source select, a dedicated Eligible Products multi-select (independent step/section), and a multi-address editor (Head Office + add Branch rows). Keep per-product commission slab builder.
+- **Detail view (V1 — four tabs)**: a header card (Nexus-style: avatar, Legal Business Name, status pill, City, Partner ID/Code, Type, Scale, BD owner name+ID) above a tab bar with exactly four tabs:
+  1. **Partner Details** — Business Details (PAN/CIN/GST, owner, contact) + Addresses (Head Office + branches) + Eligible Products.
+  2. **Documents** — compliance documents + signed agreement with review status.
+  3. **Commissions** — all eligible products with their commission config (type, metric, slabs, payout, effective dates) + Edit action (routes through commission change / Head approval).
+  4. **Activity** — read-only activity trail (Req 13).
+  Reassignment lives in the header actions and records history (not just an owner swap).
+- **Detail view (V2 — deferred)**: Business Performance, Earnings, Invoices, Payment History, Country-wise Business Potential. Not built in V1.
+- **Commission change request**: BDE action on an active partner's commission (from the Commissions tab Edit); Head review surface to approve/reject.
+
+### Known open items (PRD §19 — not inferred)
+- Tier payout calculation method (progressive vs achieved-tier). `computeCommission` currently applies the resolved slab's rate to the provided base; this is a placeholder and flagged for business confirmation.
+- Country-potential units; invoice/payment execution; auto-assign internals; deactivation/reactivation.

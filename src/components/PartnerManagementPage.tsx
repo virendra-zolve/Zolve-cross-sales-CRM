@@ -1,15 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
   Building2,
-  TrendingUp,
-  BarChart3,
-  DollarSign,
-  ChevronRight,
   Edit2,
   CheckCircle2,
   XCircle,
   Plus,
-  Download,
   ChevronDown,
 } from 'lucide-react';
 import { Partner } from '../types';
@@ -34,7 +29,7 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'pending'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'leads' | 'conversion'>('name');
   const [searchTerm, setSearchTerm] = useState('');
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'bde' | 'head'>('head');
 
   // Partner metrics
   const metrics = useMemo(() => {
@@ -96,6 +91,40 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* VIEW SWITCH */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">Partner Management</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {viewMode === 'bde'
+              ? 'BDE view — onboard and track your partners'
+              : 'Head view — oversight and approvals across all partners'}
+          </p>
+        </div>
+        <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg">
+          <button
+            onClick={() => setViewMode('bde')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              viewMode === 'bde'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            BDE
+          </button>
+          <button
+            onClick={() => setViewMode('head')}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+              viewMode === 'head'
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Head
+          </button>
+        </div>
+      </div>
+
       {/* PARTNER METRICS */}
       <div className="grid grid-cols-5 gap-3">
         {/* Total Partners */}
@@ -192,13 +221,15 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <button
-            onClick={onOpenPartnerOnboarding}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-all"
-          >
-            <Plus size={14} />
-            Onboard Partner
-          </button>
+          {viewMode === 'bde' && (
+            <button
+              onClick={onOpenPartnerOnboarding}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-all"
+            >
+              <Plus size={14} />
+              Onboard Partner
+            </button>
+          )}
         </div>
       </div>
 
@@ -216,13 +247,12 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
                 <th className="py-3 px-4 min-w-[100px] text-center">Converted</th>
                 <th className="py-3 px-4 min-w-[100px] text-center">Conversion</th>
                 <th className="py-3 px-4 min-w-[100px]">Status</th>
-                <th className="py-3 px-4 text-right min-w-[150px]">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredPartners.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     No partners found
                   </td>
                 </tr>
@@ -276,9 +306,6 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
                       {/* Conversion Rate */}
                       <td className="py-3 px-4 text-center">
                         <div className="font-semibold text-slate-900">{conversionRate}%</div>
-                        <div className="text-xs text-slate-500">
-                          {conversionRate > 20 ? '📈 Strong' : conversionRate > 10 ? '⚖️ Fair' : '📉 Low'}
-                        </div>
                       </td>
 
                       {/* Status */}
@@ -295,153 +322,12 @@ export const PartnerManagementPage: React.FC<PartnerManagementPageProps> = ({
                           {partner.status}
                         </span>
                       </td>
-
-                      {/* Actions */}
-                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="relative">
-                          <button
-                            onClick={() => setOpenDropdown(openDropdown === partner.id ? null : partner.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                          >
-                            Actions
-                            <ChevronDown size={12} />
-                          </button>
-
-                          {openDropdown === partner.id && (
-                            <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onEditPartner?.(partner);
-                                  setOpenDropdown(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-slate-700"
-                              >
-                                <Edit2 size={12} />
-                                Edit Details
-                              </button>
-
-                              {(partner.status === 'Pending Manager' ||
-                                partner.status === 'Pending Head') && (
-                                <>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onApprovePartner?.(partner.id);
-                                      setOpenDropdown(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-emerald-600"
-                                  >
-                                    <CheckCircle2 size={12} />
-                                    Approve
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onRejectPartner?.(partner.id, 'Rejected');
-                                      setOpenDropdown(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center gap-2 text-red-600"
-                                  >
-                                    <XCircle size={12} />
-                                    Reject
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </td>
                     </tr>
                   );
                 })
               )}
             </tbody>
           </table>
-        </div>
-      </section>
-
-      {/* PARTNER PERFORMANCE */}
-      <section className="bg-white border border-slate-200 rounded-xl p-4">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-          <h3 className="text-base font-bold text-slate-900">Performance Insights</h3>
-          <button className="text-xs font-medium text-slate-700 hover:text-slate-900 flex items-center gap-1">
-            <Download size={12} />
-            Export Report
-          </button>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          {/* Top Partners by Leads */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-900 mb-3 uppercase flex items-center gap-1">
-              <TrendingUp size={12} />
-              Top by Leads
-            </h4>
-            <div className="space-y-2">
-              {[...filteredPartners]
-                .sort((a, b) => b.totalLeadsGenerated - a.totalLeadsGenerated)
-                .slice(0, 3)
-                .map((partner) => (
-                  <div key={partner.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                    <div className="text-xs font-medium text-slate-900 truncate">{partner.businessName}</div>
-                    <span className="text-xs font-semibold text-blue-600 whitespace-nowrap ml-2">
-                      {partner.totalLeadsGenerated}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
-
-          {/* Top Partners by Conversion */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-900 mb-3 uppercase flex items-center gap-1">
-              <BarChart3 size={12} />
-              Best Conversion
-            </h4>
-            <div className="space-y-2">
-              {[...filteredPartners]
-                .sort((a, b) => {
-                  const rateA = a.totalLeadsGenerated > 0 ? (a.leadsConverted / a.totalLeadsGenerated) * 100 : 0;
-                  const rateB = b.totalLeadsGenerated > 0 ? (b.leadsConverted / b.totalLeadsGenerated) * 100 : 0;
-                  return rateB - rateA;
-                })
-                .slice(0, 3)
-                .map((partner) => {
-                  const rate =
-                    partner.totalLeadsGenerated > 0
-                      ? Math.round((partner.leadsConverted / partner.totalLeadsGenerated) * 100)
-                      : 0;
-                  return (
-                    <div key={partner.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                      <div className="text-xs font-medium text-slate-900 truncate">{partner.businessName}</div>
-                      <span className="text-xs font-semibold text-emerald-600 whitespace-nowrap ml-2">{rate}%</span>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-
-          {/* Most Valuable Partners */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-900 mb-3 uppercase flex items-center gap-1">
-              <DollarSign size={12} />
-              Most Active
-            </h4>
-            <div className="space-y-2">
-              {[...filteredPartners]
-                .sort((a, b) => b.leadsConverted - a.leadsConverted)
-                .slice(0, 3)
-                .map((partner) => (
-                  <div key={partner.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                    <div className="text-xs font-medium text-slate-900 truncate">{partner.businessName}</div>
-                    <span className="text-xs font-semibold text-purple-600 whitespace-nowrap ml-2">
-                      {partner.leadsConverted} cvt
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </div>
         </div>
       </section>
     </div>
