@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
 import { PartnerMaster } from '../types/partner';
+import { COUNTRIES } from '../data/countries';
 
 type MasterInput = Omit<PartnerMaster, 'id' | 'partnerCode' | 'status' | 'createdAt' | 'updatedAt'>;
 
@@ -38,11 +39,16 @@ export const PartnerMigrationModal: React.FC<PartnerMigrationModalProps> = ({
         return null;
       }
       const [legalBusinessName, partnerType, partnerScale, panNumber, ownerName, ownerEmail, ownerPhone, city, state, pincode, country] = parts;
+      const matchedCountry = COUNTRIES.find(
+        (c) => c.name.toLowerCase() === country.toLowerCase() || c.alpha3.toLowerCase() === country.toLowerCase()
+      );
       rows.push({
         master: {
           legalBusinessName,
           partnerType: partnerType as PartnerMaster['partnerType'],
           partnerScale: partnerScale as PartnerMaster['partnerScale'],
+          partnerCountry: matchedCountry?.alpha3 || '',
+          partnerUserType: '',
           panNumber,
           ownerName,
           ownerEmail,

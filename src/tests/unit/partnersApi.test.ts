@@ -12,6 +12,8 @@ function masterInput(): Omit<PartnerMaster, 'id' | 'partnerCode' | 'status' | 'c
     legalBusinessName: 'Test Partner Pvt Ltd',
     partnerType: 'Education Loan',
     partnerScale: 'Multi Branch',
+    partnerCountry: 'IND',
+    partnerUserType: 'ST',
     panNumber: 'ABCDE1234F',
     ownerName: 'Gaurav Test',
     ownerEmail: 'owner@partner.com',

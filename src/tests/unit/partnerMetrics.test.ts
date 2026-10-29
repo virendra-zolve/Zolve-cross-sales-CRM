@@ -50,6 +50,7 @@ describe('calculateBdPartnerMetrics', () => {
   function partner(id: string, status: PartnerMaster['status']): PartnerMaster {
     return {
       id, status, legalBusinessName: id, partnerType: 'Credit Card', partnerScale: 'Single Branch',
+      partnerCountry: 'IND', partnerUserType: 'ST',
       panNumber: 'ABCDE1234F', ownerName: 'o', ownerEmail: 'o@x.com', ownerPhone: '9999999999',
       contactSameAsOwner: true, contacts: [], officeType: 'Head Office',
       registeredAddress: { addressLine1: 'a', city: 'c', state: 's', pincode: '1', country: 'in' },

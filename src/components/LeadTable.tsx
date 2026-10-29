@@ -7,7 +7,14 @@ import {
   Users,
   Check,
 } from 'lucide-react';
-import { StudentLead, KPIStatus, CallingStatus, Partner } from '../types';
+import { StudentLead, KPIStatus, CallingStatus, Partner, ProductOpportunity } from '../types';
+
+export interface LeadOpportunityRow {
+  lead: StudentLead;
+  opportunity: ProductOpportunity;
+  ownerLabel?: string;
+  isAvailable?: boolean;
+}
 
 interface ColumnConfig {
   key: string;
@@ -18,6 +25,8 @@ interface ColumnConfig {
 
 interface LeadTableProps {
   leads?: StudentLead[];
+  opportunityRows?: LeadOpportunityRow[];
+  opportunityMode?: boolean;
   onSelectLead: (lead: StudentLead) => void;
   // Deprecated props kept as optional for backwards compatibility with callers;
   // they are no longer used by the table (inline Call/Log/edit removed).
@@ -35,10 +44,13 @@ interface LeadTableProps {
   onBulkAssign?: (selectedIds: string[]) => void;
   showClaimButton?: boolean;
   onClaimLead?: (lead: StudentLead) => void;
+  onClaimOpportunity?: (lead: StudentLead, opportunityId: string) => void;
 }
 
 export const LeadTable: React.FC<LeadTableProps> = ({
   leads = [],
+  opportunityRows = [],
+  opportunityMode = false,
   onSelectLead,
   kpiFilterLabel,
   onClearKpiFilter,
@@ -50,6 +62,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onBulkAssign,
   showClaimButton = false,
   onClaimLead,
+  onClaimOpportunity,
 }) => {
   const [sortBy, setSortBy] = useState<'nextCall' | 'name'>('nextCall');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -159,6 +172,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
 
   const defaultColumns = mode === 'partner' ? defaultPartnerColumns : defaultLeadColumns;
   const [columns, setColumns] = useState<ColumnConfig[]>(defaultColumns);
+  const isOpportunityMode = mode === 'lead' && opportunityMode;
 
   const handleToggleRowSelection = (leadId: string) => {
     if (!onLeadSelectionChange) return;
@@ -180,6 +194,26 @@ export const LeadTable: React.FC<LeadTableProps> = ({
 
   // Filter and sort data based on mode
   const filteredLeads = useMemo(() => {
+    if (isOpportunityMode) {
+      return opportunityRows.filter(({ lead, opportunity }) => {
+        if (!tableSearch.trim()) return true;
+        const query = tableSearch.toLowerCase();
+        return (
+          lead.studentName.toLowerCase().includes(query) ||
+          lead.id.toLowerCase().includes(query) ||
+          opportunity.product.toLowerCase().includes(query) ||
+          opportunity.id.toLowerCase().includes(query) ||
+          (opportunity.productOwner || '').toLowerCase().includes(query) ||
+          opportunity.status.toLowerCase().includes(query)
+        );
+      }).sort((a, b) => {
+        const left = sortBy === 'name' ? a.lead.studentName : a.opportunity.createdAt;
+        const right = sortBy === 'name' ? b.lead.studentName : b.opportunity.createdAt;
+        const comparison = left.localeCompare(right);
+        return sortOrder === 'asc' ? comparison : -comparison;
+      });
+    }
+
     if (mode === 'partner' && partners.length > 0) {
       // Partner mode filtering and sorting
       return partners.sort((a, b) => {
@@ -280,7 +314,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
           : (b.studentName || '').localeCompare(a.studentName || '');
       }
     });
-  }, [leads, columnFilters, tableSearch, sortBy, sortOrder, mode, partners]);
+  }, [leads, opportunityRows, opportunityMode, columnFilters, tableSearch, sortBy, sortOrder, mode, partners]);
 
   const toggleSort = (type: 'nextCall' | 'name') => {
     if (sortBy === type) {
@@ -561,6 +595,17 @@ export const LeadTable: React.FC<LeadTableProps> = ({
       <div className="overflow-x-auto">
         <table id="rm-leads-data-table" className="w-full text-left border-collapse">
           <thead>
+            {isOpportunityMode ? (
+              <tr className="border-b border-slate-200/70 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                <th className="py-2.5 px-4 w-28">Lead ID</th>
+                <th className="py-2.5 px-4 min-w-[220px]">Lead Name</th>
+                <th className="py-2.5 px-4 min-w-[150px]">Product</th>
+                <th className="py-2.5 px-4 min-w-[150px]">Opportunity ID</th>
+                <th className="py-2.5 px-4 min-w-[150px]">Status</th>
+                <th className="py-2.5 px-4 min-w-[180px]">Owner</th>
+                <th className="py-2.5 px-4 text-right min-w-[170px]">Actions</th>
+              </tr>
+            ) : (
             <tr className="border-b border-slate-200/70 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
               {visibleColumns.map((col) => {
                 let width = 'min-w-[140px]';
@@ -683,14 +728,61 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               })}
               <th className="py-2.5 px-4 text-right min-w-[170px]">Actions</th>
             </tr>
+            )}
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs">
             {filteredLeads.length === 0 ? (
               <tr>
-                <td colSpan={visibleColumns.length + 1} className="py-12 text-center text-slate-400">
+                <td colSpan={isOpportunityMode ? 7 : visibleColumns.length + 1} className="py-12 text-center text-slate-400">
                   No {mode === 'partner' ? 'partners' : 'leads'} found matching current filter
                 </td>
               </tr>
+            ) : isOpportunityMode ? (
+              filteredLeads.map(({ lead, opportunity, ownerLabel, isAvailable }: LeadOpportunityRow) => (
+                <tr
+                  key={`${lead.id}-${opportunity.id}`}
+                  className="hover:bg-slate-50/70 transition-colors group"
+                >
+                  <td className="py-3 px-4 font-mono text-xs font-semibold text-slate-800 cursor-pointer" onClick={() => onSelectLead(lead)}>
+                    {lead.id}
+                  </td>
+                  <td className="py-3 px-4 cursor-pointer" onClick={() => onSelectLead(lead)}>
+                    <span className="font-semibold text-slate-900 group-hover:text-[#2563EB] transition-colors">{lead.studentName}</span>
+                  </td>
+                  <td className="py-3 px-4 text-slate-700">{opportunity.product}</td>
+                  <td className="py-3 px-4 font-mono text-xs text-slate-700">{opportunity.id}</td>
+                  <td className="py-3 px-4">
+                    <span className="inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-md border bg-slate-100 text-slate-700 border-slate-200">
+                      {opportunity.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-slate-700">{ownerLabel || opportunity.productOwner || 'Available to claim'}</td>
+                  <td className="py-3 px-4 text-right" onClick={(event) => event.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {onClaimOpportunity && isAvailable && (
+                        <button
+                          type="button"
+                          id={`btn-claim-${lead.id}-${opportunity.id}`}
+                          onClick={() => onClaimOpportunity(lead, opportunity.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+                        >
+                          <Check className="w-3 h-3" />
+                          <span>Claim</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        id={`btn-view-${lead.id}-${opportunity.id}`}
+                        onClick={() => onSelectLead(lead)}
+                        className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        aria-label={`View ${lead.studentName}`}
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
             ) : (
               filteredLeads.map((item: any) => {
                 if (mode === 'partner') {
@@ -929,6 +1021,17 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                             <span>Claim</span>
                           </button>
                         )}
+                        {onClaimOpportunity && lead.productOpportunities.map((opportunity) => (
+                          <button
+                            key={`claim-${opportunity.id}`}
+                            id={`btn-claim-${lead.id}-${opportunity.id}`}
+                            onClick={() => onClaimOpportunity(lead, opportunity.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+                          >
+                            <Check className="w-3 h-3" />
+                            <span>Claim {opportunity.product}</span>
+                          </button>
+                        ))}
 
                         {/* View Arrow */}
                         <button

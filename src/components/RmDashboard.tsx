@@ -26,6 +26,7 @@ interface RmDashboardProps {
   onViewAllLeads: (filter?: string) => void;
   onStartDiscovery?: (lead: StudentLead) => void;
   onSimulateInboundLead?: () => void;
+  showLeadTable?: boolean;
 }
 
 // Re-export for backward compatibility
@@ -41,6 +42,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   onViewAllLeads,
   onStartDiscovery,
   onSimulateInboundLead,
+  showLeadTable = true,
 }) => {
   const [tableView, setTableView] = useState<'my-active' | 'needs-action' | 'claim-leads' | 'target'>('my-active');
   const [actionFilter, setActionFilter] = useState<'all' | 'breached' | 'callbacks' | 'pending'>('all');
@@ -228,22 +230,24 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
       </div>
 
 
-      {/* Leads Table - shows different content based on selected view */}
-      {tableView === 'claim-leads' ? (
-        <AllLeadsView
-          leads={mockAllLeads}
-          onSelectLead={onSelectLead}
-        />
-      ) : (
-        <LeadTable
-          leads={
-            tableView === 'needs-action'
-              ? actionableLeads.slice(0, 7).map(({ lead }) => lead)
-              : leads.slice(0, 7)
-          }
-          onSelectLead={onSelectLead}
-          enableColumnFilter={false}
-        />
+      {showLeadTable && (
+        /* Leads Table - shows different content based on selected view */
+        tableView === 'claim-leads' ? (
+          <AllLeadsView
+            leads={mockAllLeads}
+            onSelectLead={onSelectLead}
+          />
+        ) : (
+          <LeadTable
+            leads={
+              tableView === 'needs-action'
+                ? actionableLeads.slice(0, 7).map(({ lead }) => lead)
+                : leads.slice(0, 7)
+            }
+            onSelectLead={onSelectLead}
+            enableColumnFilter={false}
+          />
+        )
       )}
 
 

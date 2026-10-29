@@ -96,6 +96,81 @@ export type ClosureReason =
 export type KPIStatus = 'On Track' | 'Overdue';
 export type EscalationStatus = 'Not Escalated' | 'Escalated';
 
+export type WorkspaceRole =
+  | 'qualification_agent'
+  | 'rm'
+  | 'manager'
+  | 'head';
+
+export type PortalState =
+  | 'Qualification Queue'
+  | 'Acquire History'
+  | 'Signup Pending'
+  | 'Monetization'
+  | 'Handoff History';
+
+export interface PortalUser {
+  id: string;
+  name: string;
+  role: WorkspaceRole;
+}
+
+export interface QualificationInput {
+  status: 'Qualified' | 'Not Qualified';
+  reason?: string;
+  notes?: string;
+}
+
+export interface SignupConfirmationInput {
+  customerId: string;
+  accountMobile?: string;
+  accountEmail?: string;
+  consentAccepted: boolean;
+}
+
+export interface QualificationHistoryEntry {
+  id: string;
+  status: 'Qualified' | 'Not Qualified';
+  reason?: string;
+  notes?: string;
+  actor: string;
+  timestamp: string;
+}
+
+export interface SignupVerification {
+  status: 'Not Started' | 'Unknown' | 'Confirmed';
+  customerId?: string;
+  accountMobile?: string;
+  accountEmail?: string;
+  consentAcceptedAt?: string;
+  confirmedAt?: string;
+  confirmedBy?: string;
+}
+
+export interface HandoffState {
+  status: 'Not Eligible' | 'Eligible' | 'Completed' | 'Failed';
+  handedOffAt?: string;
+  handedOffBy?: string;
+  failureReason?: string;
+  monetizationOwnerSnapshot?: string;
+}
+
+export interface AcquireLifecycle {
+  portalState: PortalState;
+  qualificationOwner?: string;
+  qualificationOwnerAssignedAt?: string;
+  submittedAt?: string;
+  qualificationHistory: QualificationHistoryEntry[];
+  signup: SignupVerification;
+  handoff: HandoffState;
+}
+
+export interface OperationResult {
+  success: boolean;
+  lead?: StudentLead;
+  error?: string;
+}
+
 export interface CallLogItem {
   id: string;
   timestamp: string;
@@ -229,6 +304,9 @@ export interface StudentLead {
   createdAt: string;
   signupStatus: 'Not Signed Up' | 'Signed Up';
   customerId?: string;
+  referrerCode?: string;
+  referrerName?: string;
+  acquireLifecycle?: AcquireLifecycle;
 
   // Manager & Ownership
   leadOwnerTeam: string;

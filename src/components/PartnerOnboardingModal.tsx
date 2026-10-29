@@ -11,8 +11,11 @@ import {
   CommissionType,
   CommissionTier,
   CountryPotential,
+  BankAccountType,
   PARTNER_PRODUCTS,
 } from '../types/partner';
+import { COUNTRIES } from '../data/countries';
+import { USER_TYPES } from '../data/userTypes';
 
 
 type MasterInput = Omit<PartnerMaster, 'id' | 'partnerCode' | 'status' | 'createdAt' | 'updatedAt'>;
@@ -76,9 +79,12 @@ function blankMaster(bdOwnerId: string, bdOwnerName: string): MasterInput {
     legalBusinessName: '',
     partnerType: '' as PartnerType, // unselected — user must choose
     partnerScale: '' as PartnerScale, // unselected — user must choose
+    partnerCountry: '', // unselected — user must choose (ISO alpha-3 code)
+    partnerUserType: '', // unselected — user must choose (user type code)
     panNumber: '',
     cin: '',
     gstNumber: '',
+    bankDetails: { accountOwnerName: '', bankName: '', accountNumber: '', ifscCode: '', accountType: '' },
     ownerName: '',
     ownerEmail: '',
     ownerPhone: '',
@@ -122,6 +128,16 @@ export const PartnerOnboardingModal: React.FC<PartnerOnboardingModalProps> = ({
 
   const setRegistered = (field: string, value: string) =>
     setMaster((prev) => ({ ...prev, registeredAddress: { ...prev.registeredAddress, [field]: value } }));
+
+  const setBank = (field: string, value: string) =>
+    setMaster((prev) => ({
+      ...prev,
+      bankDetails: {
+        accountOwnerName: '', bankName: '', accountNumber: '', ifscCode: '', accountType: '',
+        ...prev.bankDetails,
+        [field]: value,
+      },
+    }));
 
   const updateContact = (idx: number, patch: Partial<PartnerContact>) =>
     setMaster((prev) => ({
@@ -320,6 +336,30 @@ export const PartnerOnboardingModal: React.FC<PartnerOnboardingModalProps> = ({
                 <input className={`${inputCls} col-span-2`} placeholder="Legal Business Name *"
                   value={master.legalBusinessName} onChange={(e) => setField('legalBusinessName', e.target.value)} />
                 <select
+                  className={`${inputCls} ${!master.partnerCountry ? 'text-slate-400' : ''}`}
+                  value={master.partnerCountry}
+                  onChange={(e) => setField('partnerCountry', e.target.value)}
+                >
+                  <option value="" disabled>Select partner country</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c.alpha3} value={c.alpha3} className="text-slate-900">
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className={`${inputCls} ${!master.partnerUserType ? 'text-slate-400' : ''}`}
+                  value={master.partnerUserType}
+                  onChange={(e) => setField('partnerUserType', e.target.value)}
+                >
+                  <option value="" disabled>Select user type</option>
+                  {USER_TYPES.map((u) => (
+                    <option key={u.code} value={u.code} className="text-slate-900">
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+                <select
                   className={`${inputCls} ${!master.partnerType ? 'text-slate-400' : ''}`}
                   value={master.partnerType}
                   onChange={(e) => setField('partnerType', e.target.value as PartnerType)}
@@ -397,6 +437,27 @@ export const PartnerOnboardingModal: React.FC<PartnerOnboardingModalProps> = ({
                       value={master.cin} onChange={(e) => setField('cin', e.target.value)} />
                     <input className={`${inputCls} col-span-2`} placeholder="GST Number"
                       value={master.gstNumber} onChange={(e) => setField('gstNumber', e.target.value)} />
+                  </div>
+
+                  <h3 className="font-semibold text-sm text-slate-900 pt-2">Bank Details</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input className={inputCls} placeholder="Account Owner Name"
+                      value={master.bankDetails?.accountOwnerName || ''} onChange={(e) => setBank('accountOwnerName', e.target.value)} />
+                    <input className={inputCls} placeholder="Bank Name"
+                      value={master.bankDetails?.bankName || ''} onChange={(e) => setBank('bankName', e.target.value)} />
+                    <input className={inputCls} placeholder="Account Number"
+                      value={master.bankDetails?.accountNumber || ''} onChange={(e) => setBank('accountNumber', e.target.value)} />
+                    <input className={inputCls} placeholder="IFSC Code"
+                      value={master.bankDetails?.ifscCode || ''} onChange={(e) => setBank('ifscCode', e.target.value.toUpperCase())} />
+                    <select
+                      className={`${inputCls} col-span-2 ${!master.bankDetails?.accountType ? 'text-slate-400' : ''}`}
+                      value={master.bankDetails?.accountType || ''}
+                      onChange={(e) => setBank('accountType', e.target.value as BankAccountType)}
+                    >
+                      <option value="" disabled>Select account type</option>
+                      <option value="Savings" className="text-slate-900">Savings</option>
+                      <option value="Current" className="text-slate-900">Current</option>
+                    </select>
                   </div>
 
                   <h3 className="font-semibold text-sm text-slate-900 pt-2">Owner</h3>

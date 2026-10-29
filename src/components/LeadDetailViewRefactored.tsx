@@ -436,23 +436,25 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
         </div>
       )}
 
-      {/* Main Layout - Sidebar + Content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar Menu */}
-        <div className="w-44 bg-white border-r border-slate-200 overflow-y-auto p-2 space-y-1">
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              onClick={() => setCurrentSection(item.id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                currentSection === item.id
-                  ? 'bg-[#2563EB] text-white shadow-md'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <span>{item.label}</span>
-            </button>
-          ))}
+      {/* Main Layout - Horizontal Tabs + Content */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Horizontal Tab Bar */}
+        <div className="bg-white border-b border-slate-200 px-2 overflow-x-auto">
+          <div className="flex gap-0">
+            {menuItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentSection(item.id)}
+                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                  currentSection === item.id
+                    ? 'border-[#2563EB] text-[#2563EB]'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Main Content Area */}

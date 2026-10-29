@@ -60,9 +60,14 @@ export interface PartnerMaster {
   legalBusinessName: string;
   partnerType: PartnerType;
   partnerScale: PartnerScale;
+  partnerCountry: string; // ISO 3166-1 alpha-3 code (e.g. 'IND', 'USA')
+  partnerUserType: string; // user type code (e.g. 'ST', 'WP', 'AL')
   panNumber: string;
   cin?: string;
   gstNumber?: string;
+
+  // Bank details
+  bankDetails?: PartnerBankDetails;
 
   // Owner
   ownerName: string;
@@ -104,6 +109,16 @@ export interface PartnerMaster {
 export interface CountryPotential {
   country: string;
   studentsPerYear: number;
+}
+
+export type BankAccountType = 'Savings' | 'Current';
+
+export interface PartnerBankDetails {
+  accountOwnerName: string;
+  bankName: string;
+  accountNumber: string;
+  ifscCode: string;
+  accountType: BankAccountType | '';
 }
 
 // ============================================================================

@@ -3,11 +3,13 @@ import { INITIAL_LEADS } from './data/initialLeads';
 import { StudentLead, LeadStatus, KPIStatus, CallLogItem, ActivityItem, AssignmentHistory, Partner, TeamMember } from './types';
 import { Header } from './components/Header';
 import { RmDashboard } from './components/RmDashboard';
+import { MonetizationCenter, MonetizationSection } from './components/MonetizationCenter';
 import { TeamLeadDashboard } from './components/TeamLeadDashboard';
 import { HeadDashboard } from './components/HeadDashboard';
 import { BdeDashboard } from './components/BdeDashboard';
 import { ManagerDashboard } from './components/ManagerDashboard';
-import { QualificationDashboard } from './components/QualificationDashboard';
+import { AcquisitionCenter } from './components/AcquisitionCenter';
+import { AcquisitionSection } from './components/QualificationDashboard';
 import { LeadTable } from './components/LeadTable';
 import { TeamManagementPage } from './components/TeamManagementPage';
 import { PartnerManagementPage } from './components/PartnerManagementPage';
@@ -28,6 +30,7 @@ import { ArrowLeft, Filter } from 'lucide-react';
 import { searchLeads } from './utils/filterHelpers';
 import { isLeadOverdue } from './utils/slaHelpers';
 import { createLeadAssignment, createBulkAssignment } from './utils/assignmentHelpers';
+import { claimOpportunity } from './utils/monetizationHelpers';
 
 // Dummy active Team Leads under Manager Virendra (Delhi NCR) and the agents that report to them.
 // Names match the leadOwner values used in INITIAL_LEADS so the Manager rollup shows real counts.
@@ -970,8 +973,10 @@ export default function App() {
   const [partners, setPartners] = useState<Partner[]>(DUMMY_PENDING_PARTNERS);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([...DUMMY_ACTIVE_TEAM, ...DUMMY_PENDING_TEAM_MEMBERS]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'head' | 'bde' | 'qualification' | 'manager' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
-  const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'head' | 'bde' | 'qualification' | 'manager' | 'partner_management'>('dashboard' as any);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
+  const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'partner_management'>('dashboard' as any);
+  const [monetizationSection, setMonetizationSection] = useState<MonetizationSection>('dashboard');
+  const [acquisitionSection, setAcquisitionSection] = useState<AcquisitionSection>('dashboard');
   const [selectedEducationLoanApplicationId, setSelectedEducationLoanApplicationId] = useState<string | null>(null);
   const [selectedLoanProductFlow, setSelectedLoanProductFlow] = useState<any>(null);
   const [selectedTeamMemberId, setSelectedTeamMemberId] = useState<string | null>(null);
@@ -1043,7 +1048,7 @@ export default function App() {
   const handleSelectLead = (lead?: StudentLead) => {
     if (!lead || !lead.id) return;
     setSelectedLeadId(lead.id);
-    if (currentView === 'dashboard') {
+    if (currentView === 'dashboard' || currentView === 'monetization' || currentView === 'qualification') {
       setLastDashboardView(currentView);
     }
     setCurrentView('detail');
@@ -1054,6 +1059,23 @@ export default function App() {
     }
   };
 
+  const handleClaimOpportunity = (leadId: string, opportunityId: string): { success: boolean; error?: string } => {
+    const lead = leads.find((item) => item.id === leadId);
+    if (!lead) return { success: false, error: 'Lead not found.' };
+
+    const opportunity = lead.productOpportunities.find((item) => item.id === opportunityId);
+    if (!opportunity) return { success: false, error: 'Opportunity not found.' };
+    if (opportunity.productOwner?.trim()) {
+      return { success: false, error: `This opportunity is already owned by ${opportunity.productOwner}.` };
+    }
+
+    const updatedLead = claimOpportunity(lead, opportunityId);
+    if (!updatedLead) return { success: false, error: 'This opportunity could not be claimed.' };
+
+    setLeads((previousLeads) => previousLeads.map((item) => item.id === leadId ? updatedLead : item));
+    return { success: true };
+  };
+
   const handleBackToDashboard = () => {
     setCurrentView(lastDashboardView);
   };
@@ -1061,8 +1083,8 @@ export default function App() {
   const handleSwitchRole = (role: 'agent' | 'team_lead' | 'manager' | 'head' | 'bde' | 'qualification' | 'partner_mgmt') => {
     setCurrentRole(role);
     // Map role to appropriate dashboard view
-    const viewMap: Record<string, 'dashboard' | 'head' | 'bde' | 'qualification' | 'manager' | 'partner_management'> = {
-      agent: 'dashboard',
+    const viewMap: Record<string, 'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'partner_management'> = {
+      agent: 'monetization',
       team_lead: 'dashboard',
       manager: 'manager',
       head: 'head',
@@ -1343,7 +1365,7 @@ export default function App() {
           { role: 'manager' as const, label: 'Manager' },
           { role: 'head' as const, label: 'Head' },
           { role: 'bde' as const, label: 'BDE' },
-          { role: 'qualification' as const, label: 'Qualification' },
+          { role: 'qualification' as const, label: 'Acquisition Center' },
           { role: 'partner_mgmt' as const, label: 'Partner Management' },
         ].map(({ role, label }) => (
           <button
@@ -1362,7 +1384,18 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 w-full px-3 py-4">
-        {currentView === 'dashboard' ? (
+        {currentView === 'monetization' ? (
+          <MonetizationCenter
+            leads={leads}
+            activeSection={monetizationSection}
+            onSectionChange={setMonetizationSection}
+            onSelectLead={handleSelectLead}
+            onClaimOpportunity={handleClaimOpportunity}
+            onOpenNewLead={() => setIsChoiceModalOpen(true)}
+            onOpenBulkUpload={() => setIsBulkUploadOpen(true)}
+            onViewAllLeads={handleNavigateToAllLeads}
+          />
+        ) : currentView === 'dashboard' ? (
           currentRole === 'team_lead' ? (
             /* Team Lead Dashboard */
             <TeamLeadDashboard
@@ -1403,9 +1436,11 @@ export default function App() {
             onCreateNewPartner={() => setIsOnboardPartnerOpen(true)}
           />
         ) : currentView === 'qualification' ? (
-          /* Qualification Dashboard - Pending qualification queue */
-          <QualificationDashboard
+          /* Acquisition Center - qualification workspace */
+          <AcquisitionCenter
             leads={leads}
+            activeSection={acquisitionSection}
+            onSectionChange={setAcquisitionSection}
             onSelectLead={handleSelectLead}
           />
         ) : currentView === 'manager' ? (
