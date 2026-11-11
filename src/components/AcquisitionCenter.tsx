@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Clock3,
-  History,
   LayoutDashboard,
   ListChecks,
   Menu,
   UserRound,
+  Clock,
   X,
 } from 'lucide-react';
 import { StudentLead } from '../types';
@@ -17,6 +16,9 @@ interface AcquisitionCenterProps {
   activeSection?: AcquisitionSection;
   onSectionChange?: (section: AcquisitionSection) => void;
   qualificationOwner?: string;
+  onClaimLead?: (lead: StudentLead) => void;
+  onReleaseLead?: (lead: StudentLead) => void;
+  onMarkSignup?: (lead: StudentLead) => void;
 }
 
 const navigationItems: Array<{
@@ -26,9 +28,8 @@ const navigationItems: Array<{
 }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'qualification-queue', label: 'Qualification Queue', icon: ListChecks },
+  { id: 'signup-pending', label: 'Pending Signup Queue', icon: Clock },
   { id: 'my-claimed-leads', label: 'My Claimed Leads', icon: UserRound },
-  { id: 'signup-pending', label: 'Signup Pending', icon: Clock3 },
-  { id: 'handoff-history', label: 'Handoff History', icon: History },
 ];
 
 const pageDescriptions: Record<AcquisitionSection, string> = {
@@ -45,6 +46,9 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
   activeSection: controlledSection,
   onSectionChange,
   qualificationOwner = 'Qualification Agent',
+  onClaimLead,
+  onReleaseLead,
+  onMarkSignup,
 }) => {
   const [internalSection, setInternalSection] = useState<AcquisitionSection>('dashboard');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -60,7 +64,7 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
     <div className="min-h-[calc(100vh-105px)] -mx-3 -my-4 flex bg-[#f8fafc]">
       <button
         type="button"
-        aria-label="Open Acquisition Center navigation"
+        aria-label="Open Qualification Center navigation"
         onClick={() => setMobileNavOpen(true)}
         className="fixed bottom-5 left-5 z-30 rounded-full bg-slate-900 p-3 text-white shadow-lg lg:hidden"
       >
@@ -81,8 +85,8 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
       >
         <div className="mb-8 flex items-center justify-between px-2">
           <div>
-            <p className="text-lg font-bold tracking-tight text-slate-900">Acquisition Center</p>
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">Acquisition workspace</p>
+            <p className="text-lg font-bold tracking-tight text-slate-900">Qualification Center</p>
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-400">Qualification workspace</p>
           </div>
           <button
             type="button"
@@ -94,7 +98,7 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
           </button>
         </div>
 
-        <nav aria-label="Acquisition Center navigation" className="space-y-1">
+        <nav aria-label="Qualification Center navigation" className="space-y-1">
           {navigationItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -111,7 +115,7 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
 
         <div className="absolute bottom-5 left-4 right-4 rounded-xl bg-slate-50 p-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Current workspace</p>
-          <p className="mt-1 truncate text-xs font-semibold text-slate-800">Qualification Agent</p>
+          <p className="mt-1 truncate text-xs font-semibold text-slate-800">Relationship Manager</p>
           <p className="text-[11px] text-slate-500">{qualificationOwner}</p>
         </div>
       </aside>
@@ -120,7 +124,7 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
         <div className="mx-auto max-w-[1500px]">
           <div className="mb-6">
             <div className="mb-2 text-xs font-medium text-slate-400">
-              <span>Acquisition Center</span>
+              <span>Qualification Center</span>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">{navigationItems.find((item) => item.id === activeSection)?.label}</h1>
             <p className="mt-1 text-sm text-slate-500">{pageDescriptions[activeSection]}</p>
@@ -131,6 +135,9 @@ export const AcquisitionCenter: React.FC<AcquisitionCenterProps> = ({
             onSelectLead={onSelectLead}
             activeSection={activeSection}
             qualificationOwner={qualificationOwner}
+            onClaimLead={onClaimLead}
+            onReleaseLead={onReleaseLead}
+            onMarkSignup={onMarkSignup}
             embedded
           />
         </div>

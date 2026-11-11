@@ -3,23 +3,6 @@ import {
   StudentLead,
 } from '../types';
 
-/**
- * A read-only view of the attribution fields recorded on a lead. The raw
- * values are intentionally copied, never normalized or inferred.
- */
-export interface SourceContextProjection {
-  leadId: string;
-  sourceCode?: string;
-  partnerCode?: string;
-  bdeCode?: string;
-  referrerCode?: string;
-  referrerName?: string;
-  intake?: string;
-  isInboundRaw?: boolean;
-  inboundCompletionPct?: number;
-  warnings: string[];
-}
-
 const isRealIdentifier = (value?: string): boolean => {
   if (!value || !value.trim()) return false;
   const normalized = value.trim().toLowerCase();
@@ -47,6 +30,9 @@ const uniqueLeads = (leads: StudentLead[]): StudentLead[] => {
   });
 };
 
+const getClaimOwner = (lead: StudentLead): string | undefined =>
+  lead.acquireLifecycle?.owner || lead.acquireLifecycle?.qualificationOwner;
+
 /** Explicit lifecycle state wins; legacy records use safe compatibility defaults. */
 export const getEffectivePortalState = (lead: StudentLead): PortalState => {
   const explicitState = lead.acquireLifecycle?.portalState;
@@ -61,40 +47,30 @@ export const getEffectivePortalState = (lead: StudentLead): PortalState => {
     return 'Signup Pending';
   }
 
-  // Not Required and malformed legacy records have no active qualification work.
   return 'Acquire History';
 };
 
-/**
- * Explicit lifecycle records must carry the complete signup verification
- * aggregate. Legacy records retain the old Signed Up + customer ID contract.
- */
 export const isSignupConfirmed = (lead: StudentLead): boolean => {
   const lifecycle = lead.acquireLifecycle;
-  if (lifecycle) {
+  if (lifecycle?.signup?.status === 'Confirmed') {
     const signup = lifecycle.signup;
     return Boolean(
-      signup &&
-        signup.status === 'Confirmed' &&
-        isRealIdentifier(signup.customerId) &&
+      isRealIdentifier(signup.customerId) &&
         hasAccountContact(signup.accountMobile, signup.accountEmail) &&
         Boolean(signup.consentAcceptedAt && signup.consentAcceptedAt.trim())
     );
   }
 
+  // Legacy mock leads may have a signed-up snapshot without lifecycle details.
+  // Claiming a lead must not make an already signed-up lead disappear.
   return lead.signupStatus === 'Signed Up' && isRealIdentifier(lead.customerId);
 };
 
-/** Qualified, verified leads may be handed off until a handoff completes. */
 export const isHandoffEligible = (lead: StudentLead): boolean =>
   lead.qualificationStatus === 'Qualified' &&
   isSignupConfirmed(lead) &&
   lead.acquireLifecycle?.handoff?.status !== 'Completed';
 
-/**
- * Shared Monetization gate. Completed handoffs are eligible in the receiving
- * system even while Acquire retains the read-only Handoff History state.
- */
 export const isMonetizationEligible = (lead: StudentLead): boolean => {
   if (lead.qualificationStatus !== 'Qualified' || !isSignupConfirmed(lead)) return false;
 
@@ -107,23 +83,29 @@ export const isMonetizationEligible = (lead: StudentLead): boolean => {
 
 export const getQualificationQueueLeads = (leads: StudentLead[]): StudentLead[] =>
   uniqueLeads(leads).filter(
-    (lead) => lead.qualificationStatus === 'Pending' && getEffectivePortalState(lead) === 'Qualification Queue'
+    (lead) =>
+      lead.qualificationStatus === 'Pending' &&
+      getEffectivePortalState(lead) === 'Qualification Queue' &&
+      !getClaimOwner(lead)
   );
 
+/** Leads claimed by the current RM that still need qualification or signup follow-up. */
 export const getMyClaimedLeads = (leads: StudentLead[], owner: string): StudentLead[] =>
   uniqueLeads(leads).filter(
     (lead) =>
-      lead.qualificationStatus === 'Qualified' &&
-      getEffectivePortalState(lead) === 'Signup Pending' &&
-      lead.acquireLifecycle?.qualificationOwner === owner
+      getClaimOwner(lead) === owner &&
+      ((lead.qualificationStatus === 'Pending' && getEffectivePortalState(lead) === 'Qualification Queue') ||
+        (lead.qualificationStatus === 'Qualified' && getEffectivePortalState(lead) === 'Signup Pending'))
   );
 
+/** The shared pending-signup claim pool. Claimed leads are visible in My Claimed Leads instead. */
 export const getSignupPendingLeads = (leads: StudentLead[]): StudentLead[] =>
   uniqueLeads(leads).filter(
     (lead) =>
       lead.qualificationStatus === 'Qualified' &&
       getEffectivePortalState(lead) === 'Signup Pending' &&
-      lead.acquireLifecycle?.handoff?.status !== 'Completed'
+      lead.acquireLifecycle?.handoff?.status !== 'Completed' &&
+      !getClaimOwner(lead)
   );
 
 export const getHandoffHistoryLeads = (leads: StudentLead[]): StudentLead[] =>
@@ -132,36 +114,3 @@ export const getHandoffHistoryLeads = (leads: StudentLead[]): StudentLead[] =>
       getEffectivePortalState(lead) === 'Handoff History' &&
       lead.acquireLifecycle?.handoff?.status === 'Completed'
   );
-
-export const getAttributionWarnings = (lead: StudentLead): string[] => {
-  const warnings: string[] = [];
-  const sourceMissing = !isRealIdentifier(lead.sourceCode);
-  const partnerPresent = isRealIdentifier(lead.partnerCode);
-  const bde = lead.bdeCode?.trim();
-  const referrer = lead.referrerCode?.trim();
-
-  if (sourceMissing) warnings.push('Source is missing or not recorded.');
-  if (sourceMissing && partnerPresent) warnings.push('Partner attribution is present without a source.');
-  if (bde && referrer && bde.toLowerCase() !== referrer.toLowerCase()) {
-    warnings.push('Referrer and BDE attribution are inconsistent.');
-  }
-
-  return warnings;
-};
-
-export const getSourceContextProjection = (lead: StudentLead): SourceContextProjection => ({
-  leadId: lead.id,
-  sourceCode: lead.sourceCode,
-  partnerCode: lead.partnerCode,
-  bdeCode: lead.bdeCode,
-  referrerCode: lead.referrerCode,
-  referrerName: lead.referrerName,
-  intake: lead.intake,
-  isInboundRaw: lead.isInboundRaw,
-  inboundCompletionPct: lead.inboundCompletionPct,
-  warnings: getAttributionWarnings(lead),
-});
-
-// Descriptive aliases for callers that refer to this as the lead context view.
-export const getLeadSourceContext = getSourceContextProjection;
-export const getSourceContextWarnings = getAttributionWarnings;

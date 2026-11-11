@@ -6,8 +6,10 @@ import {
   X,
   Users,
   Check,
+  Undo2,
 } from 'lucide-react';
 import { StudentLead, KPIStatus, CallingStatus, Partner, ProductOpportunity } from '../types';
+import { getLeadClaimOwner } from '../utils/monetizationHelpers';
 
 export interface LeadOpportunityRow {
   lead: StudentLead;
@@ -44,7 +46,11 @@ interface LeadTableProps {
   onBulkAssign?: (selectedIds: string[]) => void;
   showClaimButton?: boolean;
   onClaimLead?: (lead: StudentLead) => void;
-  onClaimOpportunity?: (lead: StudentLead, opportunityId: string) => void;
+  showReleaseButton?: boolean;
+  onReleaseLead?: (lead: StudentLead) => void;
+  showSignupButton?: boolean;
+  onMarkSignup?: (lead: StudentLead) => void;
+  showClaimOwnership?: boolean;
 }
 
 export const LeadTable: React.FC<LeadTableProps> = ({
@@ -62,7 +68,11 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onBulkAssign,
   showClaimButton = false,
   onClaimLead,
-  onClaimOpportunity,
+  showReleaseButton = false,
+  onReleaseLead,
+  showSignupButton = false,
+  onMarkSignup,
+  showClaimOwnership = false,
 }) => {
   const [sortBy, setSortBy] = useState<'nextCall' | 'name'>('nextCall');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -171,7 +181,13 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   ];
 
   const defaultColumns = mode === 'partner' ? defaultPartnerColumns : defaultLeadColumns;
-  const [columns, setColumns] = useState<ColumnConfig[]>(defaultColumns);
+  const [columns, setColumns] = useState<ColumnConfig[]>(() =>
+    defaultColumns.map((column) =>
+      showClaimOwnership && (column.key === 'claimStatus' || column.key === 'leadOwner')
+        ? { ...column, visible: true }
+        : column
+    )
+  );
   const isOpportunityMode = mode === 'lead' && opportunityMode;
 
   const handleToggleRowSelection = (leadId: string) => {
@@ -281,7 +297,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
       if (columnFilters['qualificationStatus'] && lead.qualificationStatus !== columnFilters['qualificationStatus']) {
         return false;
       }
-      if (columnFilters['claimStatus'] && (lead.claimStatus || 'Not Claimed') !== columnFilters['claimStatus']) {
+      if (columnFilters['claimStatus'] && (getLeadClaimOwner(lead) ? 'Claimed' : 'Not Claimed') !== columnFilters['claimStatus']) {
         return false;
       }
       if (columnFilters['id'] && !lead.id.toLowerCase().includes(columnFilters['id'].toLowerCase())) {
@@ -329,12 +345,10 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     setColumns(prev => prev.map(col => col.key === key ? { ...col, visible: !col.visible } : col));
   };
 
-  const visibleColumns = columns.filter(c => c.visible);
+  const visibleColumns = columns.filter((column) => column.visible);
 
   const renderAdditionalColumnData = (lead: StudentLead, columnKey: string) => {
     switch(columnKey) {
-      case 'destinationCountry':
-        return <span className="text-slate-700">{lead.destinationCountry}</span>;
       case 'course':
         return <span className="text-slate-700">{lead.course || '—'}</span>;
       case 'noOfAttempts':
@@ -376,12 +390,14 @@ export const LeadTable: React.FC<LeadTableProps> = ({
           </span>
         );
       case 'claimStatus':
-        const claimClass = lead.claimStatus === 'Claimed' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200';
+        const claimClass = getLeadClaimOwner(lead) ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200';
         return (
           <span className={`inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md border ${claimClass}`}>
-            {lead.claimStatus || 'Not Claimed'}
+            {getLeadClaimOwner(lead) ? 'Claimed' : 'Not Claimed'}
           </span>
         );
+      case 'leadOwner':
+        return <span className="text-slate-700">{getLeadClaimOwner(lead) || 'Unclaimed'}</span>;
       case 'leadStatus':
         const leadStatusClass = lead.leadStatus === 'Active' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : (lead.leadStatus === 'Closed' ? 'bg-rose-50 text-rose-800 border-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200');
         return (
@@ -620,6 +636,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                 else if (col.key === 'kpiStatus') width = 'min-w-[120px]';
                 else if (col.key === 'leadStatus') width = 'min-w-[120px]';
                 else if (col.key === 'claimStatus') width = 'min-w-[120px]';
+  const visibleColumns = columns.filter((column) => column.visible);
 
                 // Checkbox column header
                 if (col.key === 'checkbox') {
@@ -759,17 +776,6 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   <td className="py-3 px-4 text-slate-700">{ownerLabel || opportunity.productOwner || 'Available to claim'}</td>
                   <td className="py-3 px-4 text-right" onClick={(event) => event.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1.5">
-                      {onClaimOpportunity && isAvailable && (
-                        <button
-                          type="button"
-                          id={`btn-claim-${lead.id}-${opportunity.id}`}
-                          onClick={() => onClaimOpportunity(lead, opportunity.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>Claim</span>
-                        </button>
-                      )}
                       <button
                         type="button"
                         id={`btn-view-${lead.id}-${opportunity.id}`}
@@ -1010,7 +1016,6 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                     {/* Actions column - always visible */}
                     <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Claim button: Only show if showClaimButton is true */}
                         {showClaimButton && onClaimLead && (
                           <button
                             id={`btn-claim-${lead.id}`}
@@ -1018,20 +1023,29 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
                           >
                             <Check className="w-3 h-3" />
-                            <span>Claim</span>
+                            <span>Claim Lead</span>
                           </button>
                         )}
-                        {onClaimOpportunity && lead.productOpportunities.map((opportunity) => (
+                        {showSignupButton && onMarkSignup && lead.qualificationStatus === 'Qualified' && lead.signupStatus !== 'Signed Up' && (
                           <button
-                            key={`claim-${opportunity.id}`}
-                            id={`btn-claim-${lead.id}-${opportunity.id}`}
-                            onClick={() => onClaimOpportunity(lead, opportunity.id)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+                            id={`btn-mark-signup-${lead.id}`}
+                            onClick={() => onMarkSignup(lead)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors cursor-pointer"
                           >
                             <Check className="w-3 h-3" />
-                            <span>Claim {opportunity.product}</span>
+                            <span>Mark Signed Up</span>
                           </button>
-                        ))}
+                        )}
+                        {showReleaseButton && onReleaseLead && (
+                          <button
+                            id={`btn-release-${lead.id}`}
+                            onClick={() => onReleaseLead(lead)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer"
+                          >
+                            <Undo2 className="w-3 h-3" />
+                            <span>Release</span>
+                          </button>
+                        )}
 
                         {/* View Arrow */}
                         <button

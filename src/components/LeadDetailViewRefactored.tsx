@@ -5,6 +5,7 @@ import { StudentLead, MasterProduct, ProductOpportunityStatus, ActivityItem, Qua
 type DisqualificationReason = 'Not Interested' | 'Invalid Number' | 'Wrong Lead' | 'Other';
 const DISQUALIFICATION_REASONS: DisqualificationReason[] = ['Not Interested', 'Invalid Number', 'Wrong Lead', 'Other'];
 const CURRENT_USER = 'Virendra';
+import { CURRENT_RM } from '../utils/monetizationHelpers';
 import { LeadProfileSection } from './sections/LeadProfileSection';
 import { LeadAcademicSection } from './sections/LeadAcademicSection';
 import { LeadFinancialSection } from './sections/LeadFinancialSection';
@@ -39,17 +40,23 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
   const [qualifyDecision, setQualifyDecision] = useState<'' | 'Qualified' | 'Not Qualified'>('');
   const [disqualifyReason, setDisqualifyReason] = useState<DisqualificationReason | ''>('');
   const [qualificationNotesDraft, setQualificationNotesDraft] = useState('');
+  const [qualificationAction, setQualificationAction] = useState<'' | 'submit' | 'submit-and-claim'>('');
   const [isChangingQualification, setIsChangingQualification] = useState(false);
 
   const isPendingQualification =
     draftLead.qualificationStatus === 'Pending' || isChangingQualification;
 
-  const handleSaveQualification = () => {
+  const handleSubmitQualification = (action: 'submit' | 'submit-and-claim') => {
     if (!qualifyDecision) return;
     if (qualifyDecision === 'Not Qualified' && !disqualifyReason) return;
+    if (action === 'submit-and-claim' && qualifyDecision !== 'Qualified') return;
 
     const now = new Date().toISOString();
-    const descriptionParts: string[] = [`Marked as ${qualifyDecision}`];
+    const shouldClaim = action === 'submit-and-claim';
+    const descriptionParts: string[] = [
+      `Marked as ${qualifyDecision}`,
+      shouldClaim ? `Submitted and claimed by ${CURRENT_RM}` : 'Submitted to the next queue',
+    ];
     if (qualifyDecision === 'Not Qualified' && disqualifyReason) {
       descriptionParts.push(`Reason: ${disqualifyReason}`);
     }
@@ -61,13 +68,28 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
       id: `act_${Date.now()}`,
       timestamp: now,
       actor: `${CURRENT_USER} (RM)`,
-      type: 'system',
-      title: `Qualification: ${qualifyDecision}`,
+      type: 'qualification',
+      title: `Qualification submitted: ${qualifyDecision}`,
       description: descriptionParts.join(' • '),
     };
 
+    const lifecycle = draftLead.acquireLifecycle ?? {
+      portalState: 'Qualification Queue' as const,
+      qualificationHistory: [],
+      signup: { status: 'Not Started' as const },
+      handoff: { status: 'Not Eligible' as const },
+    };
     const updatedLead: StudentLead = {
       ...draftLead,
+      acquireLifecycle: {
+        ...lifecycle,
+        portalState: qualifyDecision === 'Qualified' ? 'Signup Pending' : 'Acquire History',
+        owner: shouldClaim ? CURRENT_RM : undefined,
+        ownerAssignedAt: shouldClaim ? now : undefined,
+        qualificationOwner: shouldClaim ? CURRENT_RM : undefined,
+        qualificationOwnerAssignedAt: shouldClaim ? now : undefined,
+      },
+      claimStatus: shouldClaim ? 'Claimed' : 'Not Claimed',
       qualificationStatus: qualifyDecision as QualificationStatus,
       qualifiedBy: CURRENT_USER,
       qualificationCompletedAt: now,
@@ -92,12 +114,14 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
     setDraftLead(updatedLead);
     onUpdateLead(updatedLead);
     setSaveSuccessMessage(
-      `Lead marked as ${qualifyDecision.toLowerCase()} ✓`
+      shouldClaim
+        ? 'Lead qualified, submitted, and claimed ✓'
+        : `Lead ${qualifyDecision === 'Qualified' ? 'submitted to Signup Pending' : 'disqualified'} ✓`,
     );
     setTimeout(() => setSaveSuccessMessage(null), 2500);
 
-    // Reset banner form state
     setQualifyDecision('');
+    setQualificationAction('');
     setDisqualifyReason('');
     setQualificationNotesDraft('');
     setIsChangingQualification(false);
@@ -164,7 +188,6 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
           id: `p_${Date.now()}`,
           product,
           status: 'Interested',
-          productOwner: prev.leadOwner || 'Vikas',
           createdAt: new Date().toISOString(),
           details: 'Opportunity initiated',
           amount: product === 'Education Loan' ? '$50,000' : undefined,
@@ -319,6 +342,7 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
                 onChange={(e) => {
                   const v = e.target.value as '' | 'Qualified' | 'Not Qualified';
                   setQualifyDecision(v);
+                  setQualificationAction('');
                   if (v !== 'Not Qualified') setDisqualifyReason('');
                 }}
                 className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md bg-white focus:outline-none focus:border-slate-400"
@@ -352,23 +376,30 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
                 className="px-2.5 py-1.5 text-xs border border-slate-200 rounded-md bg-white focus:outline-none focus:border-slate-400 w-56"
               />
 
-              <button
-                onClick={handleSaveQualification}
-                disabled={
-                  !qualifyDecision ||
-                  (qualifyDecision === 'Not Qualified' && !disqualifyReason)
-                }
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1E40AF] rounded-md cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
+              <label className="text-[11px] font-semibold text-slate-600">Action</label>
+              <select
+                value={qualificationAction}
+                onChange={(e) => {
+                  const action = e.target.value as '' | 'submit' | 'submit-and-claim';
+                  setQualificationAction(action);
+                  if (action) handleSubmitQualification(action);
+                }}
+                disabled={!qualifyDecision || (qualifyDecision === 'Not Qualified' && !disqualifyReason)}
+                className="px-2.5 py-1.5 text-xs font-semibold border border-slate-200 rounded-md bg-white focus:outline-none focus:border-slate-400 disabled:bg-slate-100 disabled:text-slate-400"
               >
-                <Save className="w-3.5 h-3.5" />
-                Save Qualification
-              </button>
+                <option value="">Select action…</option>
+                <option value="submit">Submit</option>
+                <option value="submit-and-claim" disabled={qualifyDecision !== 'Qualified'}>
+                  Submit and Claim
+                </option>
+              </select>
 
               {isChangingQualification && (
                 <button
                   onClick={() => {
                     setIsChangingQualification(false);
                     setQualifyDecision('');
+                    setQualificationAction('');
                     setDisqualifyReason('');
                     setQualificationNotesDraft('');
                   }}
@@ -425,6 +456,7 @@ export const LeadDetailViewRefactored: React.FC<LeadDetailViewRefactoredProps> =
               onClick={() => {
                 setIsChangingQualification(true);
                 setQualifyDecision('');
+                setQualificationAction('');
                 setDisqualifyReason('');
                 setQualificationNotesDraft('');
               }}

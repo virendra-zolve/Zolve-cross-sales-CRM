@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ArrowLeft, TrendingUp, Users, CheckCircle2, DollarSign, BarChart3 } from 'lucide-react';
-import { StudentLead } from '../types';
+import { getLeadClaimOwner } from '../utils/monetizationHelpers';
 
 interface ProductPerformancePageProps {
   product: string;
@@ -22,6 +22,11 @@ export const ProductPerformancePage: React.FC<ProductPerformancePageProps> = ({
           .filter(opp => opp.product === product)
           .map(opp => ({ ...opp, leadId: lead.id, leadName: lead.studentName }))
       );
+
+    const leadRows = leads.flatMap((lead) => {
+      const leadOpportunities = (lead.productOpportunities || []).filter((opp) => opp.product === product);
+      return leadOpportunities.length ? [{ lead, opportunities: leadOpportunities }] : [];
+    });
 
     const sold = opportunities.filter(opp => opp.status === 'Completed / Sold');
     const inProgress = opportunities.filter(opp => opp.status === 'In Progress');
@@ -53,6 +58,7 @@ export const ProductPerformancePage: React.FC<ProductPerformancePageProps> = ({
       conversionRate,
       totalValue,
       opportunities,
+      leadRows,
       soldDetails: sold,
       inProgressDetails: inProgress,
     };
@@ -147,23 +153,23 @@ export const ProductPerformancePage: React.FC<ProductPerformancePageProps> = ({
         </div>
       </div>
 
-      {/* OPPORTUNITIES TABLE */}
-      {metrics.opportunities.length > 0 && (
+      {/* LEADS TABLE */}
+      {metrics.leadRows.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">All Opportunities ({metrics.totalOpportunities})</h3>
+          <h3 className="text-lg font-bold text-slate-900 mb-4">Leads with {product} ({metrics.leadRows.length})</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left py-3 px-4 font-semibold text-slate-900">Student Name</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-900">Status</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-900">Opportunity Status</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-900">Amount</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-900">Partner</th>
-                  <th className="text-left py-3 px-4 font-semibold text-slate-900">Owner</th>
+                  <th className="text-left py-3 px-4 font-semibold text-slate-900">RM Owner</th>
                 </tr>
               </thead>
               <tbody>
-                {metrics.opportunities.map((opp, idx) => {
+                {metrics.leadRows.map(({ lead, opportunities }) => {
                   const statusColors: Record<string, string> = {
                     'Interested': 'bg-purple-100 text-purple-700',
                     'In Progress': 'bg-blue-100 text-blue-700',
@@ -171,24 +177,31 @@ export const ProductPerformancePage: React.FC<ProductPerformancePageProps> = ({
                     'Not Interested': 'bg-slate-100 text-slate-700',
                     'Failed / Rejected': 'bg-rose-100 text-rose-700',
                   };
+                  const amount = opportunities.reduce((total, opportunity) => {
+                    const numericAmount = Number((opportunity.amount || '0').replace(/[^0-9.-]/g, '')) || 0;
+                    return total + numericAmount;
+                  }, 0);
+                  const partners = Array.from(new Set(opportunities.map((opportunity) => opportunity.partner).filter(Boolean)));
+
                   return (
-                    <tr 
-                      key={idx} 
+                    <tr
+                      key={lead.id}
                       className="border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-                      onClick={() => {
-                        const lead = leads.find(l => l.id === opp.leadId);
-                        if (lead && onSelectLead) onSelectLead(lead);
-                      }}
+                      onClick={() => onSelectLead?.(lead)}
                     >
-                      <td className="py-3 px-4 font-semibold text-blue-600 hover:underline">{opp.leadName}</td>
+                      <td className="py-3 px-4 font-semibold text-blue-600 hover:underline">{lead.studentName}</td>
                       <td className="py-3 px-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[opp.status] || 'bg-slate-100'}`}>
-                          {opp.status}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {opportunities.map((opportunity) => (
+                            <span key={opportunity.id} className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusColors[opportunity.status] || 'bg-slate-100'}`}>
+                              {opportunity.status}
+                            </span>
+                          ))}
+                        </div>
                       </td>
-                      <td className="py-3 px-4 text-slate-600">${(parseFloat(opp.amount || '0') || 0).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-slate-600">{opp.partner || '-'}</td>
-                      <td className="py-3 px-4 text-slate-600">{opp.productOwner || '-'}</td>
+                      <td className="py-3 px-4 text-slate-600">{amount ? `$${amount.toLocaleString()}` : '-'}</td>
+                      <td className="py-3 px-4 text-slate-600">{partners.length ? partners.join(', ') : '-'}</td>
+                      <td className="py-3 px-4 text-slate-600">{getLeadClaimOwner(lead) || 'Unclaimed'}</td>
                     </tr>
                   );
                 })}

@@ -157,6 +157,10 @@ export interface HandoffState {
 
 export interface AcquireLifecycle {
   portalState: PortalState;
+  /** Single RM owner shared across Qualification, Signup Pending, and Monetization. */
+  owner?: string;
+  ownerAssignedAt?: string;
+  /** Legacy qualification-only ownership fields retained for old records. */
   qualificationOwner?: string;
   qualificationOwnerAssignedAt?: string;
   submittedAt?: string;
@@ -304,8 +308,6 @@ export interface StudentLead {
   createdAt: string;
   signupStatus: 'Not Signed Up' | 'Signed Up';
   customerId?: string;
-  referrerCode?: string;
-  referrerName?: string;
   acquireLifecycle?: AcquireLifecycle;
 
   // Manager & Ownership
@@ -396,7 +398,27 @@ export interface RmMember {
 }
 
 // Partner Onboarding
-export type PartnerStatus = 'Pending Manager' | 'Pending Head' | 'Agreement Pending' | 'Active' | 'Rejected by Manager' | 'Rejected by Head';
+export const CROSS_SELL_PRODUCTS = [
+  'Test Prep', 'Test Voucher', 'Admission Counselling', 'Visa Consulting',
+  'Education Loan', 'Refinance', 'Accommodation', 'SIM', 'Travel / Flights',
+  'USA Credit Card', 'UK Credit Card', 'Money Transfer', 'NRE/NRO Account',
+  'Insurance', 'Forex Card', 'USA Bank Account', 'GIC Account',
+  'Canada Blocked Account', 'Germany Bank Account', 'Europe Bank Account',
+  'Australia Bank Account',
+] as const;
+
+export type CrossSellProduct = typeof CROSS_SELL_PRODUCTS[number];
+
+export interface PartnerProductRestrictions {
+  restrictedProducts: CrossSellProduct[];
+  status: 'None' | 'Pending Head Approval' | 'Approved' | 'Rejected';
+  submittedBy?: string;
+  submittedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+}
+
 
 export interface PartnerDocument {
   type: 'PAN' | 'CIN' | 'GST' | 'Agreement';
@@ -499,6 +521,9 @@ export interface Partner {
   // Operating Address (optional, if different)
   operatingAddress?: PartnerAddress;
   
+  // Draft visibility and ownership
+  draftCreatedBy?: string;
+
   // Ownership & Location
   bdeUserId: string;
   bdeName?: string;
@@ -511,6 +536,9 @@ export interface Partner {
   sourceCode: string;
   createdAt: string;
   
+  // Product restrictions submitted during partner onboarding and approved by Head
+  productRestrictions?: PartnerProductRestrictions;
+
   // Products & Commission
   eligibleProducts: MasterProduct[];
   commissions: PartnerCommission[];

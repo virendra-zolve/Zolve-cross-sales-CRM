@@ -32,6 +32,15 @@ const ensureAcademicBackground = (lead: StudentLead): StudentLead => ({
   academicBackground: lead.academicBackground || defaultAcademicBackground()
 });
 
+/**
+ * Product ownership is intentionally not part of the mock model anymore.
+ * Every opportunity is handled through the lead-level claim instead.
+ */
+const normalizeLeadClaimOwnership = (lead: StudentLead): StudentLead => ({
+  ...lead,
+  productOpportunities: lead.productOpportunities.map(({ productOwner: _productOwner, ...opportunity }) => opportunity),
+});
+
 export const INITIAL_LEADS: StudentLead[] = [
   {
     id: 'L000199',
@@ -833,9 +842,9 @@ export const INITIAL_LEADS: StudentLead[] = [
 
     masterProducts: defaultMasterProducts(['Education Loan', 'Bank Account', 'Credit Card', 'Insurance', 'eSIM']),
     productOpportunities: [
-      { id: 'p1', product: 'Education Loan', status: 'In Progress', productOwner: 'Virendra (You)', amount: '$65,000', partner: 'Avanse / Prodigy', details: 'Sanction letter preparation', createdAt: '2026-09-05T12:00:00Z' },
-      { id: 'p2', product: 'Bank Account', status: 'Completed / Sold', productOwner: 'Global Banking RM', details: 'US Checking + Savings provisioned', transactionId: 'TXN-US-8910', createdAt: '2026-09-06T10:00:00Z', completedSoldAt: '2026-09-07T14:00:00Z' },
-      { id: 'p3', product: 'Credit Card', status: 'In Progress', productOwner: 'Global Banking RM', details: '$5,000 SSN-free limit card dispatched', createdAt: '2026-09-06T10:00:00Z' },
+      { id: 'p1', product: 'Education Loan', status: 'In Progress', amount: '$65,000', partner: 'Avanse / Prodigy', details: 'Sanction letter preparation', createdAt: '2026-09-05T12:00:00Z' },
+      { id: 'p2', product: 'Bank Account', status: 'Completed / Sold', details: 'US Checking + Savings provisioned', transactionId: 'TXN-US-8910', createdAt: '2026-09-06T10:00:00Z', completedSoldAt: '2026-09-07T14:00:00Z' },
+      { id: 'p3', product: 'Credit Card', status: 'In Progress', details: '$5,000 SSN-free limit card dispatched', createdAt: '2026-09-06T10:00:00Z' },
       { id: 'p4', product: 'Insurance', status: 'Interested', details: 'Columbia university health waiver comparison', createdAt: '2026-09-07T11:00:00Z' },
       { id: 'p5', product: 'eSIM', status: 'Not Started', details: 'T-Mobile 5G student bundle', createdAt: '2026-09-07T11:00:00Z' },
     ],
@@ -1199,4 +1208,4 @@ export const INITIAL_LEADS: StudentLead[] = [
     ],
     notes: ['Needs GIC certificate within 48 hours for SDS visa filing.']
   }
-].map(ensureAcademicBackground);
+].map(ensureAcademicBackground).map(normalizeLeadClaimOwnership);

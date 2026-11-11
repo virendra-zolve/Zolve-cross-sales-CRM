@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { INITIAL_LEADS } from './data/initialLeads';
 import { StudentLead, LeadStatus, KPIStatus, CallLogItem, ActivityItem, AssignmentHistory, Partner, TeamMember } from './types';
+import { PartnerMaster } from './types/partner';
 import { Header } from './components/Header';
 import { RmDashboard } from './components/RmDashboard';
 import { MonetizationCenter, MonetizationSection } from './components/MonetizationCenter';
@@ -30,7 +31,8 @@ import { ArrowLeft, Filter } from 'lucide-react';
 import { searchLeads } from './utils/filterHelpers';
 import { isLeadOverdue } from './utils/slaHelpers';
 import { createLeadAssignment, createBulkAssignment } from './utils/assignmentHelpers';
-import { claimOpportunity } from './utils/monetizationHelpers';
+import { CURRENT_RM, claimLead, getLeadClaimOwner, releaseLead } from './utils/monetizationHelpers';
+import { getEffectivePortalState } from './utils/acquireHelpers';
 
 // Dummy active Team Leads under Manager Virendra (Delhi NCR) and the agents that report to them.
 // Names match the leadOwner values used in INITIAL_LEADS so the Manager rollup shows real counts.
@@ -973,7 +975,7 @@ export default function App() {
   const [partners, setPartners] = useState<Partner[]>(DUMMY_PENDING_PARTNERS);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([...DUMMY_ACTIVE_TEAM, ...DUMMY_PENDING_TEAM_MEMBERS]);
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'leads_list' | 'detail' | 'education_loan' | 'education_loan_journey' | 'team_management' | 'partner_management' | 'partner_form' | 'team_member_detail' | 'partner_detail'>('dashboard' as any);
   const [lastDashboardView, setLastDashboardView] = useState<'dashboard' | 'monetization' | 'head' | 'bde' | 'qualification' | 'manager' | 'partner_management'>('dashboard' as any);
   const [monetizationSection, setMonetizationSection] = useState<MonetizationSection>('dashboard');
   const [acquisitionSection, setAcquisitionSection] = useState<AcquisitionSection>('dashboard');
@@ -990,6 +992,7 @@ export default function App() {
   const [isBulkUploadOpen, setIsBulkUploadOpen] = useState(false);
   const [isNewLeadOpen, setIsNewLeadOpen] = useState(false);
   const [isOnboardPartnerOpen, setIsOnboardPartnerOpen] = useState(false);
+  const [editingPartner, setEditingPartner] = useState<PartnerMaster | null>(null);
   const [commissionEditorPartnerId, setCommissionEditorPartnerId] = useState<string | null>(null);
   const [isTeamOnboardingOpen, setIsTeamOnboardingOpen] = useState(false);
 
@@ -1059,21 +1062,113 @@ export default function App() {
     }
   };
 
-  const handleClaimOpportunity = (leadId: string, opportunityId: string): { success: boolean; error?: string } => {
-    const lead = leads.find((item) => item.id === leadId);
+  const handleClaimLead = (leadToClaim: StudentLead): { success: boolean; error?: string } => {
+    const lead = leads.find((item) => item.id === leadToClaim.id);
     if (!lead) return { success: false, error: 'Lead not found.' };
 
-    const opportunity = lead.productOpportunities.find((item) => item.id === opportunityId);
-    if (!opportunity) return { success: false, error: 'Opportunity not found.' };
-    if (opportunity.productOwner?.trim()) {
-      return { success: false, error: `This opportunity is already owned by ${opportunity.productOwner}.` };
+    const updatedLead = claimLead(lead, CURRENT_RM);
+    if (!updatedLead) {
+      return { success: false, error: 'This lead is no longer available to claim.' };
     }
 
-    const updatedLead = claimOpportunity(lead, opportunityId);
-    if (!updatedLead) return { success: false, error: 'This opportunity could not be claimed.' };
+    const claimedAt = new Date().toISOString();
+    const activity: ActivityItem = {
+      id: `acquire-claim-${lead.id}-${claimedAt}`,
+      timestamp: claimedAt,
+      actor: CURRENT_RM,
+      type: 'assignment',
+      title: 'Lead claimed',
+      description: `${lead.id} claimed by ${CURRENT_RM}. All product opportunities remain with this RM.`,
+    };
 
-    setLeads((previousLeads) => previousLeads.map((item) => item.id === leadId ? updatedLead : item));
+    setLeads((previousLeads) =>
+      previousLeads.map((item) =>
+        item.id === lead.id
+          ? { ...updatedLead, activities: [activity, ...updatedLead.activities] }
+          : item,
+      ),
+    );
     return { success: true };
+  };
+
+  const handleReleaseLead = (leadToRelease: StudentLead): { success: boolean; error?: string } => {
+    const lead = leads.find((item) => item.id === leadToRelease.id);
+    if (!lead) return { success: false, error: 'Lead not found.' };
+
+    const updatedLead = releaseLead(lead, CURRENT_RM);
+    if (!updatedLead) {
+      return { success: false, error: 'Only the current RM can release this lead.' };
+    }
+
+    const releasedAt = new Date().toISOString();
+    const activity: ActivityItem = {
+      id: `acquire-release-${lead.id}-${releasedAt}`,
+      timestamp: releasedAt,
+      actor: CURRENT_RM,
+      type: 'assignment',
+      title: 'Lead released',
+      description: `${lead.id} released by ${CURRENT_RM}. It is available in its current queue.`,
+    };
+
+    setLeads((previousLeads) =>
+      previousLeads.map((item) =>
+        item.id === lead.id
+          ? { ...updatedLead, activities: [activity, ...updatedLead.activities] }
+          : item,
+      ),
+    );
+    return { success: true };
+  };
+
+  const handleMarkSignup = (leadToUpdate: StudentLead) => {
+    const lead = leads.find((item) => item.id === leadToUpdate.id);
+    if (!lead || lead.qualificationStatus !== 'Qualified' || getLeadClaimOwner(lead) !== CURRENT_RM) return;
+
+    const now = new Date().toISOString();
+    const lifecycle = lead.acquireLifecycle ?? {
+      portalState: 'Signup Pending' as const,
+      qualificationHistory: [],
+      signup: { status: 'Not Started' as const },
+      handoff: { status: 'Not Eligible' as const },
+    };
+    const customerId = lead.customerId && lead.customerId !== 'na' ? lead.customerId : `CUST-${lead.id}`;
+    const updatedLead: StudentLead = {
+      ...lead,
+      signupStatus: 'Signed Up',
+      customerId,
+      acquireLifecycle: {
+        ...lifecycle,
+        portalState: 'Monetization',
+        signup: {
+          status: 'Confirmed',
+          customerId,
+          accountMobile: lead.mobileNumber,
+          accountEmail: lead.email || undefined,
+          consentAcceptedAt: now,
+          confirmedAt: now,
+          confirmedBy: CURRENT_RM,
+        },
+        handoff: {
+          ...lifecycle.handoff,
+          status: 'Eligible',
+        },
+      },
+      activities: [
+        {
+          id: `signup-confirmed-${lead.id}-${now}`,
+          timestamp: now,
+          actor: CURRENT_RM,
+          type: 'stage_change',
+          title: 'Signup marked as confirmed',
+          description: `${lead.id} moved to Monetization in the mock environment.`,
+        },
+        ...lead.activities,
+      ],
+      lastActionAt: now,
+      lastActionBy: CURRENT_RM,
+    };
+
+    setLeads((previousLeads) => previousLeads.map((item) => item.id === lead.id ? updatedLead : item));
   };
 
   const handleBackToDashboard = () => {
@@ -1115,7 +1210,28 @@ export default function App() {
         if (lead.id !== leadId) return lead;
         const derivedTeam = newOwner.includes('Ankit') ? 'Banking & Forex Team' : 'Education Loan Team';
         const { updatedLead } = createLeadAssignment(lead, newOwner, derivedTeam, reason, 'Manager Virendra');
-        return updatedLead;
+        const now = new Date().toISOString();
+        return {
+          ...updatedLead,
+          acquireLifecycle: updatedLead.acquireLifecycle
+            ? {
+                ...updatedLead.acquireLifecycle,
+                owner: newOwner,
+                ownerAssignedAt: now,
+                qualificationOwner: newOwner,
+                qualificationOwnerAssignedAt: now,
+              }
+            : {
+                portalState: getEffectivePortalState(updatedLead),
+                owner: newOwner,
+                ownerAssignedAt: now,
+                qualificationOwner: newOwner,
+                qualificationOwnerAssignedAt: now,
+                qualificationHistory: [],
+                signup: { status: 'Not Started' as const },
+                handoff: { status: 'Not Eligible' as const },
+              },
+        };
       })
     );
   };
@@ -1128,7 +1244,28 @@ export default function App() {
       prev.map((lead) => {
         if (!leadsToAssign.find(l => l.id === lead.id)) return lead;
         const { updatedLead } = createLeadAssignment(lead, newOwner, derivedTeam, 'Bulk reallocation for workload balance', 'Manager Virendra');
-        return updatedLead;
+        const now = new Date().toISOString();
+        return {
+          ...updatedLead,
+          acquireLifecycle: updatedLead.acquireLifecycle
+            ? {
+                ...updatedLead.acquireLifecycle,
+                owner: newOwner,
+                ownerAssignedAt: now,
+                qualificationOwner: newOwner,
+                qualificationOwnerAssignedAt: now,
+              }
+            : {
+                portalState: getEffectivePortalState(updatedLead),
+                owner: newOwner,
+                ownerAssignedAt: now,
+                qualificationOwner: newOwner,
+                qualificationOwnerAssignedAt: now,
+                qualificationHistory: [],
+                signup: { status: 'Not Started' as const },
+                handoff: { status: 'Not Eligible' as const },
+              },
+        };
       })
     );
   };
@@ -1365,7 +1502,7 @@ export default function App() {
           { role: 'manager' as const, label: 'Manager' },
           { role: 'head' as const, label: 'Head' },
           { role: 'bde' as const, label: 'BDE' },
-          { role: 'qualification' as const, label: 'Acquisition Center' },
+          { role: 'qualification' as const, label: 'Qualification Center' },
           { role: 'partner_mgmt' as const, label: 'Partner Management' },
         ].map(({ role, label }) => (
           <button
@@ -1390,7 +1527,8 @@ export default function App() {
             activeSection={monetizationSection}
             onSectionChange={setMonetizationSection}
             onSelectLead={handleSelectLead}
-            onClaimOpportunity={handleClaimOpportunity}
+            onClaimLead={handleClaimLead}
+            onReleaseLead={handleReleaseLead}
             onOpenNewLead={() => setIsChoiceModalOpen(true)}
             onOpenBulkUpload={() => setIsBulkUploadOpen(true)}
             onViewAllLeads={handleNavigateToAllLeads}
@@ -1436,12 +1574,16 @@ export default function App() {
             onCreateNewPartner={() => setIsOnboardPartnerOpen(true)}
           />
         ) : currentView === 'qualification' ? (
-          /* Acquisition Center - qualification workspace */
+          /* Qualification Center - qualification workspace */
           <AcquisitionCenter
             leads={leads}
             activeSection={acquisitionSection}
             onSectionChange={setAcquisitionSection}
             onSelectLead={handleSelectLead}
+            qualificationOwner={CURRENT_RM}
+            onClaimLead={handleClaimLead}
+            onReleaseLead={handleReleaseLead}
+            onMarkSignup={handleMarkSignup}
           />
         ) : currentView === 'manager' ? (
           /* Manager Dashboard - Location-level rollup */
@@ -1516,6 +1658,7 @@ export default function App() {
             <LeadTable
               leads={displayLeads}
               onSelectLead={handleSelectLead}
+              showClaimOwnership
               kpiFilterLabel={getKpiFilterLabel()}
               onClearKpiFilter={() => setKpiFilter('all')}
             />
@@ -1554,7 +1697,8 @@ export default function App() {
               setCurrentView('partner_detail');
             }}
             onEditPartner={(partner) => {
-              alert(`Edit partner: ${partner.businessName}`);
+              setEditingPartner(partner as unknown as PartnerMaster);
+              setCurrentView('partner_form' as any);
             }}
             onApprovePartner={(partnerId) => {
               setPartners(prev =>
@@ -1574,7 +1718,12 @@ export default function App() {
                 )
               );
             }}
-            onOpenPartnerOnboarding={() => setIsOnboardPartnerOpen(true)}
+            onOpenPartnerOnboarding={() => {
+              setEditingPartner(null);
+              setCurrentView('partner_form' as any);
+            }}
+            currentUserId={currentRole === 'head' ? 'HEAD' : 'U1001'}
+            isHead={currentRole === 'head'}
           />
         ) : currentView === 'team_member_detail' ? (
           /* Team Member Detail View */
@@ -1601,15 +1750,111 @@ export default function App() {
               <p className="text-sm text-slate-600">Team member not found</p>
             </div>
           )
+        ) : currentView === 'partner_form' ? (
+          <PartnerOnboardingModal
+            onClose={() => {
+              setEditingPartner(null);
+              setCurrentView('partner_management');
+            }}
+            bdOwnerId="U1001"
+            bdOwnerName="Arun"
+            initialPartner={editingPartner || undefined}
+            existingPartnerId={editingPartner?.id}
+            headOffices={partners.map((p) => ({
+              id: p.id,
+              name: p.businessName,
+              panNumber: p.pan || p.panNumber || '',
+              gstNumber: p.gst || p.gstNumber,
+              cin: p.cin,
+            }))}
+            onSubmit={(master, commissions, documents, existingPartnerId, submit) => {
+              if (!submit) {
+                const contact = master.contactSameAsOwner
+                  ? { name: master.ownerName, email: master.ownerEmail, phone: master.ownerPhone }
+                  : master.contacts[0] || { name: '', email: '', phone: '' };
+                const draftPartner: Partner = {
+                  id: existingPartnerId || `draft_${Date.now()}`,
+                  partnerCode: '',
+                  status: 'Draft',
+                  businessName: master.legalBusinessName || 'Untitled Partner',
+                  partnerType: master.partnerType,
+                  pan: master.panNumber,
+                  panNumber: master.panNumber,
+                  cin: master.cin,
+                  gstNumber: master.gstNumber,
+                  ownerName: master.ownerName,
+                  ownerEmail: master.ownerEmail,
+                  ownerPhone: master.ownerPhone,
+                  contactPersonName: contact.name,
+                  contactPersonEmail: contact.email,
+                  contactPersonPhone: contact.phone,
+                  registeredAddress: { ...master.registeredAddress, street: master.registeredAddress.addressLine1 },
+                  operatingAddress: master.operatingAddress ? { ...master.operatingAddress, street: master.operatingAddress.addressLine1 } : undefined,
+                  bdeUserId: master.bdOwnerId,
+                  bdeName: master.bdOwnerName,
+                  managerId: '',
+                  locationId: '',
+                  sourceCode: 'PARTNER_DRAFT',
+                  createdAt: new Date().toISOString(),
+                  eligibleProducts: [],
+                  commissions: [],
+                  documents: [],
+                  totalLeadsGenerated: 0,
+                  leadsConverted: 0,
+                  activeLeads: 0,
+                  approvalHistory: [],
+                  draftCreatedBy: master.bdOwnerId,
+                };
+                setPartners((previous) => [draftPartner, ...previous.filter((p) => p.id !== draftPartner.id)]);
+                setCurrentView('partner_management');
+                return;
+              }
+
+              if (existingPartnerId) {
+                const result = submit
+                  ? partnersDb.submitPartner(existingPartnerId, 'BD')
+                  : partnersDb.updatePartner(existingPartnerId, master);
+                if (result.success) {
+                  setEditingPartner(null);
+                  setCurrentView('partner_detail');
+                }
+                return;
+              }
+              const result = partnersDb.createPartner({ ...master, submit: Boolean(submit), skipValidation: !submit });
+              if (result.success && result.data) {
+                commissions.forEach((c) => partnersDb.setCommission(result.data!.id, { partnerId: result.data!.id, product: c.product, tierMetric: c.tierMetric, commissionType: c.commissionType, effectiveFrom: c.effectiveFrom, status: 'Active', tiers: c.tiers }));
+                documents.forEach((d) => partnersDb.addDocument(result.data!.id, { documentType: d.type, fileName: d.fileName, fileUrl: '#', uploadedBy: 'U1001' }));
+                setCurrentView('partner_management');
+              }
+            }}
+            onSaveSection={(section, master, commissions, documents, existingPartnerId) => {
+              const contact = master.contactSameAsOwner
+                ? { name: master.ownerName, email: master.ownerEmail, phone: master.ownerPhone }
+                : master.contacts[0] || { name: '', email: '', phone: '' };
+              const draftPartner: Partner = {
+                id: existingPartnerId || `draft_${Date.now()}`,
+                partnerCode: '', status: 'Draft', businessName: master.legalBusinessName || 'Untitled Partner',
+                partnerType: master.partnerType, pan: master.panNumber, panNumber: master.panNumber, cin: master.cin, gstNumber: master.gstNumber,
+                ownerName: master.ownerName, ownerEmail: master.ownerEmail, ownerPhone: master.ownerPhone,
+                contactPersonName: contact.name, contactPersonEmail: contact.email, contactPersonPhone: contact.phone,
+                registeredAddress: { ...master.registeredAddress, street: master.registeredAddress.addressLine1 },
+                operatingAddress: master.operatingAddress ? { ...master.operatingAddress, street: master.operatingAddress.addressLine1 } : undefined,
+                bdeUserId: master.bdOwnerId, bdeName: master.bdOwnerName, managerId: '', locationId: '', sourceCode: 'PARTNER_DRAFT',
+                createdAt: new Date().toISOString(), eligibleProducts: [], commissions: [], documents: [], totalLeadsGenerated: 0, leadsConverted: 0, activeLeads: 0,
+                approvalHistory: [], draftCreatedBy: master.bdOwnerId,
+              };
+              setPartners((previous) => [draftPartner, ...previous.filter((p) => p.id !== draftPartner.id)]);
+            }}
+          />
         ) : currentView === 'partner_detail' ? (
-          /* Partner Detail View */
           selectedPartnerId ? (
             <PartnerDetailView
               partner={partners.find(p => p.id === selectedPartnerId)!}
               partnerLeads={leads.filter(l => l.partnerCode === partners.find(p => p.id === selectedPartnerId)?.partnerCode)}
               onBack={() => setCurrentView('partner_management')}
               onEdit={(partner) => {
-                alert(`Edit partner: ${partner.businessName}`);
+                setEditingPartner(partner as unknown as PartnerMaster);
+                setCurrentView('partner_form' as any);
               }}
               onApprove={(partnerId) => {
                 setPartners(prev =>
@@ -1681,6 +1926,21 @@ export default function App() {
                     };
                   })
                 );
+              }}
+              onReviewProductRestrictions={(partnerId, decision, reason) => {
+                setPartners((prev) => prev.map((p) => {
+                  if (p.id !== partnerId || !p.productRestrictions) return p;
+                  return {
+                    ...p,
+                    productRestrictions: {
+                      ...p.productRestrictions,
+                      status: decision === 'approve' ? 'Approved' : 'Rejected',
+                      approvedBy: 'Head',
+                      approvedAt: new Date().toISOString(),
+                      rejectionReason: decision === 'reject' ? reason : undefined,
+                    },
+                  };
+                }));
               }}
             />
           ) : (
@@ -1763,46 +2023,6 @@ export default function App() {
         onClose={() => setIsNewLeadOpen(false)}
         onCreateLead={handleCreateLead}
         existingLeads={leads}
-      />
-
-      {/* Onboard Partner Modal (new normalized model with commission slabs) */}
-      <PartnerOnboardingModal
-        isOpen={isOnboardPartnerOpen}
-        onClose={() => setIsOnboardPartnerOpen(false)}
-        bdOwnerId="U1001"
-        bdOwnerName="Arun"
-        headOffices={partners.map((p) => ({
-          id: p.id,
-          name: p.businessName,
-          panNumber: p.pan || p.panNumber || '',
-          gstNumber: p.gst || p.gstNumber,
-          cin: p.cin,
-        }))}
-        onSubmit={(master, commissions, documents) => {
-          const res = partnersDb.createPartner({ ...master, submit: true, skipValidation: true });
-          if (res.success && res.data) {
-            const partnerId = res.data.id;
-            commissions.forEach((c) =>
-              partnersDb.setCommission(partnerId, {
-                partnerId,
-                product: c.product,
-                tierMetric: c.tierMetric,
-                commissionType: c.commissionType,
-                effectiveFrom: c.effectiveFrom,
-                status: 'Active',
-                tiers: c.tiers,
-              })
-            );
-            documents.forEach((d) =>
-              partnersDb.addDocument(partnerId, {
-                documentType: d.type,
-                fileName: d.fileName,
-                fileUrl: '#',
-                uploadedBy: 'U1001',
-              })
-            );
-          }
-        }}
       />
 
       {/* Commission Editor Modal */}

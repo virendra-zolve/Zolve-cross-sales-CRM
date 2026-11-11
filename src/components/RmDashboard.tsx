@@ -14,9 +14,8 @@ import { StudentLead } from '../types';
 import { calculateLeadSlaInfo, SlaInfo } from '../utils/slaHelpers';
 import { calculateDashboardMetrics } from '../utils/metricsHelpers';
 import { LeadTable } from './LeadTable';
-import { AllLeadsView } from './AllLeadsView';
 import { ProductPerformancePage } from './ProductPerformancePage';
-import { generateMockAllLeads } from '../data/mockAllLeads';
+import { getAvailableLeads } from '../utils/monetizationHelpers';
 
 interface RmDashboardProps {
   leads: StudentLead[];
@@ -24,6 +23,7 @@ interface RmDashboardProps {
   onOpenNewLead: () => void;
   onOpenBulkUpload: () => void;
   onViewAllLeads: (filter?: string) => void;
+  onClaimLead?: (lead: StudentLead) => void;
   onStartDiscovery?: (lead: StudentLead) => void;
   onSimulateInboundLead?: () => void;
   showLeadTable?: boolean;
@@ -40,6 +40,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   onOpenNewLead,
   onOpenBulkUpload,
   onViewAllLeads,
+  onClaimLead,
   onStartDiscovery,
   onSimulateInboundLead,
   showLeadTable = true,
@@ -47,7 +48,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
   const [tableView, setTableView] = useState<'my-active' | 'needs-action' | 'claim-leads' | 'target'>('my-active');
   const [actionFilter, setActionFilter] = useState<'all' | 'breached' | 'callbacks' | 'pending'>('all');
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
-  const mockAllLeads = useMemo(() => generateMockAllLeads(), []);
+  const availableClaimLeads = useMemo(() => getAvailableLeads(leads), [leads]);
 
   // Calculate metrics once - single source of truth
   const metrics = useMemo(() => {
@@ -207,7 +208,7 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
         >
           <div className="inline-block px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full mb-3">CLAIM</div>
           <div className={`text-3xl font-bold transition-colors ${tableView === 'claim-leads' ? 'text-emerald-600' : 'text-slate-900 group-hover:text-emerald-600'}`}>
-            {mockAllLeads.filter(l => !l.leadOwner || l.leadOwner === 'Unassigned').length}
+            {availableClaimLeads.length}
           </div>
           <div className="text-xs text-slate-600 mt-2">Available to claim</div>
         </div>
@@ -233,9 +234,12 @@ export const RmDashboard: React.FC<RmDashboardProps> = ({
       {showLeadTable && (
         /* Leads Table - shows different content based on selected view */
         tableView === 'claim-leads' ? (
-          <AllLeadsView
-            leads={mockAllLeads}
+          <LeadTable
+            leads={availableClaimLeads}
             onSelectLead={onSelectLead}
+            onClaimLead={onClaimLead}
+            showClaimButton={Boolean(onClaimLead)}
+            showClaimOwnership
           />
         ) : (
           <LeadTable

@@ -11,14 +11,13 @@ import {
   X,
 } from 'lucide-react';
 import { MasterProduct, StudentLead } from '../types';
-import { LeadTable, LeadOpportunityRow } from './LeadTable';
+import { LeadTable } from './LeadTable';
 import { RmDashboard } from './RmDashboard';
 import {
   CURRENT_RM,
   MONETIZATION_PRODUCTS,
-  OpportunityRow,
-  getAvailableOpportunityRows,
-  getOwnedOpportunityRows,
+  getAvailableLeads,
+  getOwnedLeads,
 } from '../utils/monetizationHelpers';
 import { isMonetizationEligible } from '../utils/acquireHelpers';
 
@@ -29,7 +28,8 @@ interface MonetizationCenterProps {
   activeSection?: MonetizationSection;
   onSectionChange?: (section: MonetizationSection) => void;
   onSelectLead: (lead: StudentLead) => void;
-  onClaimOpportunity: (leadId: string, opportunityId: string) => { success: boolean; error?: string };
+  onClaimLead: (lead: StudentLead) => { success: boolean; error?: string };
+  onReleaseLead: (lead: StudentLead) => { success: boolean; error?: string };
   onOpenNewLead: () => void;
   onOpenBulkUpload: () => void;
   onViewAllLeads: (filter?: string) => void;
@@ -54,20 +54,13 @@ const pageTitles: Record<string, string> = {
   'Credit Card': 'Credit Card',
 };
 
-const toOpportunityRows = (rows: OpportunityRow[]): LeadOpportunityRow[] =>
-  rows.map(({ lead, opportunity, ownerLabel, isAvailable }) => ({
-    lead,
-    opportunity,
-    ownerLabel,
-    isAvailable,
-  }));
-
 export const MonetizationCenter: React.FC<MonetizationCenterProps> = ({
   leads,
   activeSection: controlledSection,
   onSectionChange,
   onSelectLead,
-  onClaimOpportunity,
+  onClaimLead,
+  onReleaseLead,
   onOpenNewLead,
   onOpenBulkUpload,
   onViewAllLeads,
@@ -77,18 +70,22 @@ export const MonetizationCenter: React.FC<MonetizationCenterProps> = ({
   const [error, setError] = useState<string | null>(null);
   const activeSection = controlledSection ?? internalSection;
 
-  const availableRows = useMemo(() => getAvailableOpportunityRows(leads), [leads]);
-  const productRows = useMemo(
-    () => getOwnedOpportunityRows(leads, CURRENT_RM, activeSection as MasterProduct),
-    [activeSection, leads]
+  const availableLeads = useMemo(() => getAvailableLeads(leads), [leads]);
+  const myLeads = useMemo(() => getOwnedLeads(leads, CURRENT_RM), [leads]);
+  const productLeads = useMemo(
+    () => getOwnedLeads(leads, CURRENT_RM, activeSection as MasterProduct),
+    [activeSection, leads],
   );
-  const myRows = useMemo(() => getOwnedOpportunityRows(leads, CURRENT_RM), [leads]);
 
   const selectSection = (section: MonetizationSection) => {
     setInternalSection(section);
     onSectionChange?.(section);
     setError(null);
     setMobileNavOpen(false);
+  };
+
+  const runAction = (action: { success: boolean; error?: string }, fallback: string) => {
+    setError(action.success ? null : action.error || fallback);
   };
 
   return (
@@ -163,7 +160,7 @@ export const MonetizationCenter: React.FC<MonetizationCenterProps> = ({
               <h1 className="text-2xl font-bold tracking-tight text-slate-900">{pageTitles[activeSection]}</h1>
               <p className="mt-1 text-sm text-slate-500">{sectionDescription(activeSection)}</p>
             </div>
-            {activeSection === 'lead-pool' && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">{availableRows.length} opportunities available</div>}
+            {activeSection === 'lead-pool' && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">{availableLeads.length} leads available</div>}
           </div>
 
           {error && (
@@ -176,6 +173,7 @@ export const MonetizationCenter: React.FC<MonetizationCenterProps> = ({
             <RmDashboard
               leads={leads.filter(isMonetizationEligible)}
               onSelectLead={onSelectLead}
+              onClaimLead={(lead) => runAction(onClaimLead(lead), 'This lead could not be claimed.')}
               onOpenNewLead={onOpenNewLead}
               onOpenBulkUpload={onOpenBulkUpload}
               onViewAllLeads={onViewAllLeads}
@@ -184,20 +182,30 @@ export const MonetizationCenter: React.FC<MonetizationCenterProps> = ({
           )}
           {activeSection === 'lead-pool' && (
             <LeadTable
-              opportunityRows={toOpportunityRows(availableRows)}
-              opportunityMode
+              leads={availableLeads}
               onSelectLead={onSelectLead}
-              onClaimOpportunity={(lead, opportunityId) => {
-                const result = onClaimOpportunity(lead.id, opportunityId);
-                setError(result.success ? null : result.error || 'This opportunity could not be claimed.');
-              }}
+              onClaimLead={(lead) => runAction(onClaimLead(lead), 'This lead could not be claimed.')}
+              showClaimButton
+              showClaimOwnership
             />
           )}
           {activeSection === 'my-leads' && (
-            <LeadTable opportunityRows={toOpportunityRows(myRows)} opportunityMode onSelectLead={onSelectLead} />
+            <LeadTable
+              leads={myLeads}
+              onSelectLead={onSelectLead}
+              onReleaseLead={(lead) => runAction(onReleaseLead(lead), 'This lead could not be released.')}
+              showReleaseButton
+              showClaimOwnership
+            />
           )}
           {MONETIZATION_PRODUCTS.includes(activeSection as MasterProduct) && (
-            <LeadTable opportunityRows={toOpportunityRows(productRows)} opportunityMode onSelectLead={onSelectLead} />
+            <LeadTable
+              leads={productLeads}
+              onSelectLead={onSelectLead}
+              onReleaseLead={(lead) => runAction(onReleaseLead(lead), 'This lead could not be released.')}
+              showReleaseButton
+              showClaimOwnership
+            />
           )}
         </div>
       </section>
@@ -212,8 +220,8 @@ const NavButton: React.FC<{ active: boolean; icon: React.ElementType; label: str
 );
 
 const sectionDescription = (section: MonetizationSection) => {
-  if (section === 'lead-pool') return 'Discover product opportunities available for you to claim.';
-  if (section === 'my-leads') return 'Manage the leads where you own at least one product opportunity.';
-  if (MONETIZATION_PRODUCTS.includes(section as MasterProduct)) return `Your ${section} opportunities and active product work.`;
+  if (section === 'lead-pool') return 'Discover signed-up leads available for you to claim. Each claim includes every product opportunity on the lead.';
+  if (section === 'my-leads') return 'Manage the signed-up leads you own and all of their product opportunities.';
+  if (MONETIZATION_PRODUCTS.includes(section as MasterProduct)) return `Your leads with ${section} opportunities. Product work remains grouped under each lead.`;
   return 'Track your RM performance, pipeline, and follow-up priorities.';
 };

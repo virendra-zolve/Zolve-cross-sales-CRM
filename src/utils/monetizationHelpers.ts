@@ -1,83 +1,83 @@
-import { MasterProduct, ProductOpportunity, StudentLead } from '../types';
-import { isMonetizationEligible } from './acquireHelpers';
+import { MasterProduct, StudentLead } from '../types';
+import { getEffectivePortalState, isMonetizationEligible } from './acquireHelpers';
 
 export const CURRENT_RM = 'Virendra (You)';
 export const MONETIZATION_PRODUCTS: MasterProduct[] = ['Education Loan', 'Credit Card'];
 
-export interface OpportunityRow {
-  lead: StudentLead;
-  opportunity: ProductOpportunity;
-  ownerLabel: string;
-  isAvailable: boolean;
-}
+/** One owner is shared by every queue in the acquire-to-monetization lifecycle. */
+export const getLeadClaimOwner = (lead: StudentLead): string | undefined =>
+  lead.acquireLifecycle?.owner || lead.acquireLifecycle?.qualificationOwner;
 
-export interface MyLeadGroup {
-  lead: StudentLead;
-  opportunities: ProductOpportunity[];
-}
+export const isLeadClaimed = (lead: StudentLead): boolean => Boolean(getLeadClaimOwner(lead)?.trim());
 
-const isAvailable = (opportunity: ProductOpportunity) => !opportunity.productOwner?.trim();
+const isClaimableLifecycleState = (lead: StudentLead): boolean => {
+  const state = getEffectivePortalState(lead);
+  return state === 'Qualification Queue' || state === 'Signup Pending' || state === 'Monetization';
+};
 
-/** All Monetization projections share the strict Acquire handoff gate. */
-export const getOpportunityRows = (leads: StudentLead[], product?: MasterProduct): OpportunityRow[] =>
-  leads
-    .filter(isMonetizationEligible)
-    .flatMap((lead) =>
-      lead.productOpportunities
-        .filter((opportunity) => !product || opportunity.product === product)
-        .map((opportunity) => ({
-          lead,
-          opportunity,
-          ownerLabel: opportunity.productOwner || 'Available to claim',
-          isAvailable: isAvailable(opportunity),
-        }))
-    );
+/** All monetization projections contain one row per lead, never one row per opportunity. */
+export const getMonetizationLeads = (leads: StudentLead[]): StudentLead[] =>
+  leads.filter(isMonetizationEligible);
 
-export const getAvailableOpportunityRows = (leads: StudentLead[]): OpportunityRow[] =>
-  getOpportunityRows(leads).filter((row) => row.isAvailable);
+export const getAvailableLeads = (leads: StudentLead[]): StudentLead[] =>
+  getMonetizationLeads(leads).filter((lead) => !isLeadClaimed(lead));
 
-export const getOwnedOpportunityRows = (
+export const getOwnedLeads = (
   leads: StudentLead[],
   owner = CURRENT_RM,
   product?: MasterProduct,
-): OpportunityRow[] => getOpportunityRows(leads, product).filter((row) => row.opportunity.productOwner === owner);
-
-export const getMyLeadGroups = (leads: StudentLead[], owner = CURRENT_RM): MyLeadGroup[] => {
-  const groups = new Map<string, MyLeadGroup>();
-
-  getOwnedOpportunityRows(leads, owner).forEach(({ lead, opportunity }) => {
-    const existing = groups.get(lead.id);
-    if (existing) {
-      existing.opportunities.push(opportunity);
-    } else {
-      groups.set(lead.id, { lead, opportunities: [opportunity] });
-    }
-  });
-
-  return Array.from(groups.values());
-};
-
-export const getRmScopedLeads = (leads: StudentLead[], owner = CURRENT_RM): StudentLead[] =>
-  leads.filter(
+): StudentLead[] =>
+  getMonetizationLeads(leads).filter(
     (lead) =>
-      isMonetizationEligible(lead) &&
-      (lead.leadOwner === owner || lead.productOpportunities.some((opportunity) => opportunity.productOwner === owner))
+      getLeadClaimOwner(lead) === owner &&
+      (!product || lead.productOpportunities.some((opportunity) => opportunity.product === product)),
   );
 
-export const claimOpportunity = (
+export const getRmScopedLeads = (leads: StudentLead[], owner = CURRENT_RM): StudentLead[] =>
+  getOwnedLeads(leads, owner);
+
+export const claimLead = (
   lead: StudentLead,
-  opportunityId: string,
   owner = CURRENT_RM,
 ): StudentLead | null => {
-  if (!isMonetizationEligible(lead)) return null;
+  if (!isClaimableLifecycleState(lead) || isLeadClaimed(lead)) return null;
 
-  const opportunity = lead.productOpportunities.find((item) => item.id === opportunityId);
-  if (!opportunity || !isAvailable(opportunity)) return null;
+  const claimedAt = new Date().toISOString();
+  const lifecycle = lead.acquireLifecycle ?? {
+    portalState: getEffectivePortalState(lead),
+    qualificationHistory: [],
+    signup: { status: 'Not Started' as const },
+    handoff: { status: 'Not Eligible' as const },
+  };
 
   return {
     ...lead,
-    productOpportunities: lead.productOpportunities.map((item) =>
-      item.id === opportunityId ? { ...item, productOwner: owner } : item
-    ),
+    acquireLifecycle: {
+      ...lifecycle,
+      owner,
+      ownerAssignedAt: claimedAt,
+      // Keep legacy readers in sync while all new behavior uses owner.
+      qualificationOwner: owner,
+      qualificationOwnerAssignedAt: claimedAt,
+    },
+  };
+};
+
+export const releaseLead = (
+  lead: StudentLead,
+  owner = CURRENT_RM,
+): StudentLead | null => {
+  if (getLeadClaimOwner(lead) !== owner) return null;
+  if (!lead.acquireLifecycle) return null;
+
+  return {
+    ...lead,
+    acquireLifecycle: {
+      ...lead.acquireLifecycle,
+      owner: undefined,
+      ownerAssignedAt: undefined,
+      qualificationOwner: undefined,
+      qualificationOwnerAssignedAt: undefined,
+    },
   };
 };
